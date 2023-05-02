@@ -21,3 +21,8 @@ type KeyProvider interface {
 	GetSecret(key string) string
 	NumKeys() int
 }
+
+type KeyProviderPublicKey interface {
+	KeyProvider
+	GetPublicKey(address string) string
+}

@@ -3,6 +3,9 @@ package auth
 import (
 	"time"
 
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/pkg/errors"
+
 	"github.com/go-jose/go-jose/v3"
 	"github.com/go-jose/go-jose/v3/jwt"
 )
@@ -61,7 +64,12 @@ func (t *AccessToken) ToJWT() (string, error) {
 		return "", ErrKeysMissing
 	}
 
-	sig, err := jose.NewSigner(jose.SigningKey{Algorithm: jose.HS256, Key: []byte(t.secret)},
+	prvKey, err := crypto.HexToECDSA(t.secret)
+	if err != nil {
+		return "", errors.Wrap(err, "hex to ecdsa eth private key")
+	}
+
+	sig, err := jose.NewSigner(jose.SigningKey{Algorithm: jose.ES256, Key: prvKey},
 		(&jose.SignerOptions{}).WithType("JWT"))
 	if err != nil {
 		return "", err
