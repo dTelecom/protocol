@@ -5,7 +5,7 @@ go 1.18
 //replace github.com/dTelecom/p2p-realtime-database => /var/www/dtelekom/p2p-database
 
 require (
-	github.com/dTelecom/p2p-realtime-database v1.0.0
+	github.com/dTelecom/p2p-realtime-database v1.0.1
 	github.com/eapache/channels v1.1.0
 	github.com/ethereum/go-ethereum v1.11.6
 	github.com/frostbyte73/core v0.0.5
