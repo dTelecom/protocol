@@ -2,9 +2,10 @@ module github.com/livekit/protocol
 
 go 1.18
 
-replace github.com/dTelecom/p2p-realtime-database => /var/www/dtelekom/p2p-database
+//replace github.com/dTelecom/p2p-realtime-database => /var/www/dtelekom/p2p-database
 
 require (
+	github.com/dTelecom/p2p-realtime-database v1.0.0
 	github.com/eapache/channels v1.1.0
 	github.com/ethereum/go-ethereum v1.11.6
 	github.com/frostbyte73/core v0.0.5
@@ -46,7 +47,6 @@ require (
 	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
 	github.com/crackcomm/go-gitignore v0.0.0-20170627025303-887ab5e44cc3 // indirect
 	github.com/cskr/pubsub v1.0.2 // indirect
-	github.com/dTelecom/p2p-realtime-database v0.0.0-20230429154044-30b68986871b // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/davidlazar/go-crypto v0.0.0-20200604182044-b73af7476f6c // indirect
 	github.com/deckarep/golang-set/v2 v2.1.0 // indirect
@@ -186,7 +186,6 @@ require (
 	go.opentelemetry.io/otel/trace v1.14.0 // indirect
 	go.uber.org/dig v1.15.0 // indirect
 	go.uber.org/fx v1.18.2 // indirect
-	go.uber.org/goleak v1.1.12 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
 	golang.org/x/crypto v0.8.0 // indirect
 	golang.org/x/mod v0.9.0 // indirect
