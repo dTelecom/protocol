@@ -18,6 +18,7 @@ message Room {
   string metadata = 8;
   uint32 num_participants = 9;
   bool active_recording = 10;
+  string key = 11;
 }
 
 message Codec {
