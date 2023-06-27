@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-logr/logr"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 
@@ -19,22 +18,19 @@ import (
 const defaultWebhookTimeout = 10 * time.Second
 
 type Notifier interface {
-	Notify(ctx context.Context, payload interface{}) error
+	Notify(ctx context.Context, payload interface{}, url string) error
 }
 
 type notifier struct {
 	apiKey    string
 	apiSecret string
-	urls      []string
 	client    *http.Client
-	logger    logr.Logger
 }
 
-func NewNotifier(apiKey, apiSecret string, urls []string) Notifier {
+func NewNotifier(apiKey, apiSecret string) Notifier {
 	return &notifier{
 		apiKey:    apiKey,
 		apiSecret: apiSecret,
-		urls:      urls,
 		logger:    logr.Discard(),
 		client: &http.Client{
 			Timeout: defaultWebhookTimeout,
@@ -42,7 +38,7 @@ func NewNotifier(apiKey, apiSecret string, urls []string) Notifier {
 	}
 }
 
-func (n *notifier) Notify(_ context.Context, payload interface{}) error {
+func (n *notifier) Notify(_ context.Context, payload interface{}, url string) error {
 	var encoded []byte
 	var err error
 	if message, ok := payload.(proto.Message); ok {
@@ -68,20 +64,16 @@ func (n *notifier) Notify(_ context.Context, payload interface{}) error {
 		return err
 	}
 
-	for _, url := range n.urls {
-		r, err := http.NewRequest("POST", url, bytes.NewReader(encoded))
-		if err != nil {
-			// ignore and continue
-			n.logger.Error(err, "could not create request", "url", url)
-			continue
-		}
-		r.Header.Set(authHeader, token)
-		// use a custom mime type to ensure signature is checked prior to parsing
-		r.Header.Set("content-type", "application/webhook+json")
-		_, err = n.client.Do(r)
-		if err != nil {
-			n.logger.Error(err, "could not post to webhook", "url", url)
-		}
+	r, err := http.NewRequest("POST", url, bytes.NewReader(encoded))
+	if err != nil {
+		return err
+	}
+	r.Header.Set(authHeader, token)
+	// use a custom mime type to ensure signature is checked prior to parsing
+	r.Header.Set("content-type", "application/webhook+json")
+	_, err = n.client.Do(r)
+	if err != nil {
+		return err
 	}
 
 	return nil
