@@ -44,6 +44,7 @@ type ClaimGrants struct {
 	// for verifying integrity of the message body
 	Sha256   string `json:"sha256,omitempty"`
 	Metadata string `json:"metadata,omitempty"`
+	WebHookURL   string `json:"webHookURL,omitempty"`
 }
 
 func (c *ClaimGrants) Clone() *ClaimGrants {

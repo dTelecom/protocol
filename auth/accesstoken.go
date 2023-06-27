@@ -59,6 +59,11 @@ func (t *AccessToken) SetSha256(sha string) *AccessToken {
 	return t
 }
 
+func (t *AccessToken) SetWebHookURL(webHookURL string) *AccessToken {
+	t.grant.WebHookURL = webHookURL
+	return t
+}
+
 func (t *AccessToken) ToJWT() (string, error) {
 	if t.apiKey == "" || t.secret == "" {
 		return "", ErrKeysMissing
