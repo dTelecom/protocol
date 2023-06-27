@@ -31,7 +31,6 @@ func NewNotifier(apiKey, apiSecret string) Notifier {
 	return &notifier{
 		apiKey:    apiKey,
 		apiSecret: apiSecret,
-		logger:    logr.Discard(),
 		client: &http.Client{
 			Timeout: defaultWebhookTimeout,
 		},
