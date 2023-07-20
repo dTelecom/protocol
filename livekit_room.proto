@@ -6,6 +6,7 @@ option csharp_namespace = "LiveKit.Proto";
 option ruby_package = "LiveKit::Proto";
 
 import "livekit_models.proto";
+import "livekit_egress.proto";
 
 // Room service that can be performed on any node
 // they are Twirp-based HTTP req/responses
@@ -19,6 +20,26 @@ service RoomService {
 
   // Mute/unmute a participant's track, Requires `roomAdmin`
   rpc MutePublishedTrack(MuteRoomTrackRequest) returns (MuteRoomTrackResponse);
+}
+
+message CreateRoomRequest {
+  // name of the room
+  string name = 1;
+  // number of seconds to keep the room open if no one joins
+  uint32 empty_timeout = 2;
+  // limit number of participants that can be in a room
+  uint32 max_participants = 3;
+  // override the node room is allocated to, for debugging
+  string node_id = 4;
+  // metadata of room
+  string metadata = 5;
+  // egress
+  RoomEgress egress = 6;
+}
+
+message RoomEgress {
+  RoomCompositeEgressRequest room = 1;
+  AutoTrackEgress tracks = 2;
 }
 
 message DeleteRoomRequest {
