@@ -84,6 +84,7 @@ message ParticipantInfo {
   // indicates the participant has an active publisher connection
   // and can publish to the server
   bool is_publisher = 13;
+  bool relayed = 14;
 }
 
 enum TrackType {
