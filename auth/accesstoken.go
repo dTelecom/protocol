@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"crypto/ed25519"
-
 	"github.com/gagliardetto/solana-go"
 
 	"github.com/go-jose/go-jose/v3"
