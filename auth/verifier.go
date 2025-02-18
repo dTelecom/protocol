@@ -48,11 +48,15 @@ func (v *APIKeyTokenVerifier) Identity() string {
 }
 
 func (v *APIKeyTokenVerifier) Verify(key interface{}) (*ClaimGrants, error) {
-	if key == nil || key == "" {
+	s, ok := key.(string)
+	if !ok {
+		return nil, ErrKeysMissing
+	}
+	if s == nil || s == "" {
 		return nil, ErrKeysMissing
 	}
 
-	pubKeyB, err := solana.PublicKeyFromBase58(key)
+	pubKeyB, err := solana.PublicKeyFromBase58(s)
 	if err != nil {
 		return nil, err
 	}
