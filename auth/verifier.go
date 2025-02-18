@@ -52,9 +52,6 @@ func (v *APIKeyTokenVerifier) Verify(key interface{}) (*ClaimGrants, error) {
 	if !ok {
 		return nil, ErrKeysMissing
 	}
-	if s == nil || s == "" {
-		return nil, ErrKeysMissing
-	}
 
 	pubKeyB, err := solana.PublicKeyFromBase58(s)
 	if err != nil {
