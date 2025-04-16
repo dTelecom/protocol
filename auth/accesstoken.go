@@ -3,8 +3,8 @@ package auth
 import (
 	"time"
 
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/pkg/errors"
+	"crypto/ed25519"
+	"github.com/gagliardetto/solana-go"
 
 	"github.com/go-jose/go-jose/v3"
 	"github.com/go-jose/go-jose/v3/jwt"
@@ -69,12 +69,13 @@ func (t *AccessToken) ToJWT() (string, error) {
 		return "", ErrKeysMissing
 	}
 
-	prvKey, err := crypto.HexToECDSA(t.secret)
+	solanaPrivateKey, err := solana.PrivateKeyFromBase58(t.secret)
 	if err != nil {
-		return "", errors.Wrap(err, "hex to ecdsa eth private key")
+		return "", err
 	}
+	privateKey := ed25519.PrivateKey(solanaPrivateKey)
 
-	sig, err := jose.NewSigner(jose.SigningKey{Algorithm: jose.ES256, Key: prvKey},
+	sig, err := jose.NewSigner(jose.SigningKey{Algorithm: jose.EdDSA, Key: privateKey},
 		(&jose.SignerOptions{}).WithType("JWT"))
 	if err != nil {
 		return "", err

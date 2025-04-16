@@ -3,6 +3,9 @@ package auth
 import (
 	"time"
 
+	"crypto/ed25519"
+	"github.com/gagliardetto/solana-go"
+
 	"github.com/go-jose/go-jose/v3/jwt"
 )
 
@@ -45,15 +48,21 @@ func (v *APIKeyTokenVerifier) Identity() string {
 }
 
 func (v *APIKeyTokenVerifier) Verify(key interface{}) (*ClaimGrants, error) {
-	if key == nil || key == "" {
+	s, ok := key.(string)
+	if !ok {
 		return nil, ErrKeysMissing
 	}
-	if s, ok := key.(string); ok {
-		key = []byte(s)
+
+	pubKeyB, err := solana.PublicKeyFromBase58(s)
+	if err != nil {
+		return nil, err
 	}
+
+	pubKey := ed25519.PublicKey(pubKeyB[:])
+
 	out := jwt.Claims{}
 	claims := ClaimGrants{}
-	if err := v.token.Claims(key, &out, &claims); err != nil {
+	if err := v.token.Claims(pubKey, &out, &claims); err != nil {
 		return nil, err
 	}
 	if err := out.Validate(jwt.Expected{Issuer: v.apiKey, Time: time.Now()}); err != nil {

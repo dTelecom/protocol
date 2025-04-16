@@ -24,5 +24,5 @@ type KeyProvider interface {
 
 type KeyProviderPublicKey interface {
 	KeyProvider
-	GetPublicKey(address string) string
+	GetPublicKey(address string) (string, error)
 }
