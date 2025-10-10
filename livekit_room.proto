@@ -15,6 +15,21 @@ service RoomService {
   // DeleteRoom will disconnect all participants that are currently in the room.
   rpc DeleteRoom(DeleteRoomRequest) returns (DeleteRoomResponse);
 
+  // Lists participants in a room, Requires `roomAdmin`
+  rpc ListParticipants(ListParticipantsRequest) returns (ListParticipantsResponse);
+
+  // Get information on a specific participant, Requires `roomAdmin`
+  rpc GetParticipant(RoomParticipantIdentity) returns (ParticipantInfo);
+
+  // Update participant metadata, will cause updates to be broadcasted to everyone in the room. Requires `roomAdmin`
+  rpc UpdateParticipant(UpdateParticipantRequest) returns (ParticipantInfo);
+
+  // Subscribes or unsubscribe a participant from tracks. Requires `roomAdmin`
+  rpc UpdateSubscriptions(UpdateSubscriptionsRequest) returns (UpdateSubscriptionsResponse);
+
+  // Send data over data channel to participants in a room, Requires `roomAdmin`
+  rpc SendData(SendDataRequest) returns (SendDataResponse);
+
   // Removes a participant from room. Requires `roomAdmin`
   rpc RemoveParticipant(RoomParticipantIdentity) returns (RemoveParticipantResponse);
 
@@ -58,6 +73,23 @@ message RoomParticipantIdentity {
 }
 
 message RemoveParticipantResponse {
+}
+
+message ListParticipantsRequest {
+  // name of the room
+  string room = 1;
+}
+
+message ListParticipantsResponse {
+  repeated ParticipantInfo participants = 1;
+}
+
+message UpdateSubscriptionsResponse {
+  // empty for now
+}
+
+message SendDataResponse {
+  //
 }
 
 message MuteRoomTrackRequest {
