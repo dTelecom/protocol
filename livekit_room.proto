@@ -15,6 +15,12 @@ service RoomService {
   // DeleteRoom will disconnect all participants that are currently in the room.
   rpc DeleteRoom(DeleteRoomRequest) returns (DeleteRoomResponse);
 
+  // Removes a participant from room. Requires `roomAdmin`
+  rpc RemoveParticipant(RoomParticipantIdentity) returns (RemoveParticipantResponse);
+
+  // Mute/unmute a participant's track, Requires `roomAdmin`
+  rpc MutePublishedTrack(MuteRoomTrackRequest) returns (MuteRoomTrackResponse);
+
   // Lists participants in a room, Requires `roomAdmin`
   rpc ListParticipants(ListParticipantsRequest) returns (ListParticipantsResponse);
 
@@ -29,12 +35,6 @@ service RoomService {
 
   // Send data over data channel to participants in a room, Requires `roomAdmin`
   rpc SendData(SendDataRequest) returns (SendDataResponse);
-
-  // Removes a participant from room. Requires `roomAdmin`
-  rpc RemoveParticipant(RoomParticipantIdentity) returns (RemoveParticipantResponse);
-
-  // Mute/unmute a participant's track, Requires `roomAdmin`
-  rpc MutePublishedTrack(MuteRoomTrackRequest) returns (MuteRoomTrackResponse);
 }
 
 message CreateRoomRequest {
@@ -73,23 +73,6 @@ message RoomParticipantIdentity {
 }
 
 message RemoveParticipantResponse {
-}
-
-message ListParticipantsRequest {
-  // name of the room
-  string room = 1;
-}
-
-message ListParticipantsResponse {
-  repeated ParticipantInfo participants = 1;
-}
-
-message UpdateSubscriptionsResponse {
-  // empty for now
-}
-
-message SendDataResponse {
-  //
 }
 
 message MuteRoomTrackRequest {
@@ -140,4 +123,21 @@ message UpdateRoomMetadataRequest {
   string room = 1;
   // metadata to update. skipping updates if left empty
   string metadata = 2;
+}
+
+message ListParticipantsRequest {
+  // name of the room
+  string room = 1;
+}
+
+message ListParticipantsResponse {
+  repeated ParticipantInfo participants = 1;
+}
+
+message UpdateSubscriptionsResponse {
+  // empty for now
+}
+
+message SendDataResponse {
+  //
 }

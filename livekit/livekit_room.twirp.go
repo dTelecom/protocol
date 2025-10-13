@@ -33,6 +33,12 @@ type RoomService interface {
 	// DeleteRoom will disconnect all participants that are currently in the room.
 	DeleteRoom(context.Context, *DeleteRoomRequest) (*DeleteRoomResponse, error)
 
+	// Removes a participant from room. Requires `roomAdmin`
+	RemoveParticipant(context.Context, *RoomParticipantIdentity) (*RemoveParticipantResponse, error)
+
+	// Mute/unmute a participant's track, Requires `roomAdmin`
+	MutePublishedTrack(context.Context, *MuteRoomTrackRequest) (*MuteRoomTrackResponse, error)
+
 	// Lists participants in a room, Requires `roomAdmin`
 	ListParticipants(context.Context, *ListParticipantsRequest) (*ListParticipantsResponse, error)
 
@@ -47,12 +53,6 @@ type RoomService interface {
 
 	// Send data over data channel to participants in a room, Requires `roomAdmin`
 	SendData(context.Context, *SendDataRequest) (*SendDataResponse, error)
-
-	// Removes a participant from room. Requires `roomAdmin`
-	RemoveParticipant(context.Context, *RoomParticipantIdentity) (*RemoveParticipantResponse, error)
-
-	// Mute/unmute a participant's track, Requires `roomAdmin`
-	MutePublishedTrack(context.Context, *MuteRoomTrackRequest) (*MuteRoomTrackResponse, error)
 }
 
 // ===========================
@@ -91,13 +91,13 @@ func NewRoomServiceProtobufClient(baseURL string, client HTTPClient, opts ...twi
 	serviceURL += baseServicePath(pathPrefix, "livekit", "RoomService")
 	urls := [8]string{
 		serviceURL + "DeleteRoom",
+		serviceURL + "RemoveParticipant",
+		serviceURL + "MutePublishedTrack",
 		serviceURL + "ListParticipants",
 		serviceURL + "GetParticipant",
 		serviceURL + "UpdateParticipant",
 		serviceURL + "UpdateSubscriptions",
 		serviceURL + "SendData",
-		serviceURL + "RemoveParticipant",
-		serviceURL + "MutePublishedTrack",
 	}
 
 	return &roomServiceProtobufClient{
@@ -154,236 +154,6 @@ func (c *roomServiceProtobufClient) callDeleteRoom(ctx context.Context, in *Dele
 	return out, nil
 }
 
-func (c *roomServiceProtobufClient) ListParticipants(ctx context.Context, in *ListParticipantsRequest) (*ListParticipantsResponse, error) {
-	ctx = ctxsetters.WithPackageName(ctx, "livekit")
-	ctx = ctxsetters.WithServiceName(ctx, "RoomService")
-	ctx = ctxsetters.WithMethodName(ctx, "ListParticipants")
-	caller := c.callListParticipants
-	if c.interceptor != nil {
-		caller = func(ctx context.Context, req *ListParticipantsRequest) (*ListParticipantsResponse, error) {
-			resp, err := c.interceptor(
-				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*ListParticipantsRequest)
-					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*ListParticipantsRequest) when calling interceptor")
-					}
-					return c.callListParticipants(ctx, typedReq)
-				},
-			)(ctx, req)
-			if resp != nil {
-				typedResp, ok := resp.(*ListParticipantsResponse)
-				if !ok {
-					return nil, twirp.InternalError("failed type assertion resp.(*ListParticipantsResponse) when calling interceptor")
-				}
-				return typedResp, err
-			}
-			return nil, err
-		}
-	}
-	return caller(ctx, in)
-}
-
-func (c *roomServiceProtobufClient) callListParticipants(ctx context.Context, in *ListParticipantsRequest) (*ListParticipantsResponse, error) {
-	out := new(ListParticipantsResponse)
-	ctx, err := doProtobufRequest(ctx, c.client, c.opts.Hooks, c.urls[1], in, out)
-	if err != nil {
-		twerr, ok := err.(twirp.Error)
-		if !ok {
-			twerr = twirp.InternalErrorWith(err)
-		}
-		callClientError(ctx, c.opts.Hooks, twerr)
-		return nil, err
-	}
-
-	callClientResponseReceived(ctx, c.opts.Hooks)
-
-	return out, nil
-}
-
-func (c *roomServiceProtobufClient) GetParticipant(ctx context.Context, in *RoomParticipantIdentity) (*ParticipantInfo, error) {
-	ctx = ctxsetters.WithPackageName(ctx, "livekit")
-	ctx = ctxsetters.WithServiceName(ctx, "RoomService")
-	ctx = ctxsetters.WithMethodName(ctx, "GetParticipant")
-	caller := c.callGetParticipant
-	if c.interceptor != nil {
-		caller = func(ctx context.Context, req *RoomParticipantIdentity) (*ParticipantInfo, error) {
-			resp, err := c.interceptor(
-				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*RoomParticipantIdentity)
-					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*RoomParticipantIdentity) when calling interceptor")
-					}
-					return c.callGetParticipant(ctx, typedReq)
-				},
-			)(ctx, req)
-			if resp != nil {
-				typedResp, ok := resp.(*ParticipantInfo)
-				if !ok {
-					return nil, twirp.InternalError("failed type assertion resp.(*ParticipantInfo) when calling interceptor")
-				}
-				return typedResp, err
-			}
-			return nil, err
-		}
-	}
-	return caller(ctx, in)
-}
-
-func (c *roomServiceProtobufClient) callGetParticipant(ctx context.Context, in *RoomParticipantIdentity) (*ParticipantInfo, error) {
-	out := new(ParticipantInfo)
-	ctx, err := doProtobufRequest(ctx, c.client, c.opts.Hooks, c.urls[2], in, out)
-	if err != nil {
-		twerr, ok := err.(twirp.Error)
-		if !ok {
-			twerr = twirp.InternalErrorWith(err)
-		}
-		callClientError(ctx, c.opts.Hooks, twerr)
-		return nil, err
-	}
-
-	callClientResponseReceived(ctx, c.opts.Hooks)
-
-	return out, nil
-}
-
-func (c *roomServiceProtobufClient) UpdateParticipant(ctx context.Context, in *UpdateParticipantRequest) (*ParticipantInfo, error) {
-	ctx = ctxsetters.WithPackageName(ctx, "livekit")
-	ctx = ctxsetters.WithServiceName(ctx, "RoomService")
-	ctx = ctxsetters.WithMethodName(ctx, "UpdateParticipant")
-	caller := c.callUpdateParticipant
-	if c.interceptor != nil {
-		caller = func(ctx context.Context, req *UpdateParticipantRequest) (*ParticipantInfo, error) {
-			resp, err := c.interceptor(
-				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*UpdateParticipantRequest)
-					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*UpdateParticipantRequest) when calling interceptor")
-					}
-					return c.callUpdateParticipant(ctx, typedReq)
-				},
-			)(ctx, req)
-			if resp != nil {
-				typedResp, ok := resp.(*ParticipantInfo)
-				if !ok {
-					return nil, twirp.InternalError("failed type assertion resp.(*ParticipantInfo) when calling interceptor")
-				}
-				return typedResp, err
-			}
-			return nil, err
-		}
-	}
-	return caller(ctx, in)
-}
-
-func (c *roomServiceProtobufClient) callUpdateParticipant(ctx context.Context, in *UpdateParticipantRequest) (*ParticipantInfo, error) {
-	out := new(ParticipantInfo)
-	ctx, err := doProtobufRequest(ctx, c.client, c.opts.Hooks, c.urls[3], in, out)
-	if err != nil {
-		twerr, ok := err.(twirp.Error)
-		if !ok {
-			twerr = twirp.InternalErrorWith(err)
-		}
-		callClientError(ctx, c.opts.Hooks, twerr)
-		return nil, err
-	}
-
-	callClientResponseReceived(ctx, c.opts.Hooks)
-
-	return out, nil
-}
-
-func (c *roomServiceProtobufClient) UpdateSubscriptions(ctx context.Context, in *UpdateSubscriptionsRequest) (*UpdateSubscriptionsResponse, error) {
-	ctx = ctxsetters.WithPackageName(ctx, "livekit")
-	ctx = ctxsetters.WithServiceName(ctx, "RoomService")
-	ctx = ctxsetters.WithMethodName(ctx, "UpdateSubscriptions")
-	caller := c.callUpdateSubscriptions
-	if c.interceptor != nil {
-		caller = func(ctx context.Context, req *UpdateSubscriptionsRequest) (*UpdateSubscriptionsResponse, error) {
-			resp, err := c.interceptor(
-				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*UpdateSubscriptionsRequest)
-					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*UpdateSubscriptionsRequest) when calling interceptor")
-					}
-					return c.callUpdateSubscriptions(ctx, typedReq)
-				},
-			)(ctx, req)
-			if resp != nil {
-				typedResp, ok := resp.(*UpdateSubscriptionsResponse)
-				if !ok {
-					return nil, twirp.InternalError("failed type assertion resp.(*UpdateSubscriptionsResponse) when calling interceptor")
-				}
-				return typedResp, err
-			}
-			return nil, err
-		}
-	}
-	return caller(ctx, in)
-}
-
-func (c *roomServiceProtobufClient) callUpdateSubscriptions(ctx context.Context, in *UpdateSubscriptionsRequest) (*UpdateSubscriptionsResponse, error) {
-	out := new(UpdateSubscriptionsResponse)
-	ctx, err := doProtobufRequest(ctx, c.client, c.opts.Hooks, c.urls[4], in, out)
-	if err != nil {
-		twerr, ok := err.(twirp.Error)
-		if !ok {
-			twerr = twirp.InternalErrorWith(err)
-		}
-		callClientError(ctx, c.opts.Hooks, twerr)
-		return nil, err
-	}
-
-	callClientResponseReceived(ctx, c.opts.Hooks)
-
-	return out, nil
-}
-
-func (c *roomServiceProtobufClient) SendData(ctx context.Context, in *SendDataRequest) (*SendDataResponse, error) {
-	ctx = ctxsetters.WithPackageName(ctx, "livekit")
-	ctx = ctxsetters.WithServiceName(ctx, "RoomService")
-	ctx = ctxsetters.WithMethodName(ctx, "SendData")
-	caller := c.callSendData
-	if c.interceptor != nil {
-		caller = func(ctx context.Context, req *SendDataRequest) (*SendDataResponse, error) {
-			resp, err := c.interceptor(
-				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*SendDataRequest)
-					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*SendDataRequest) when calling interceptor")
-					}
-					return c.callSendData(ctx, typedReq)
-				},
-			)(ctx, req)
-			if resp != nil {
-				typedResp, ok := resp.(*SendDataResponse)
-				if !ok {
-					return nil, twirp.InternalError("failed type assertion resp.(*SendDataResponse) when calling interceptor")
-				}
-				return typedResp, err
-			}
-			return nil, err
-		}
-	}
-	return caller(ctx, in)
-}
-
-func (c *roomServiceProtobufClient) callSendData(ctx context.Context, in *SendDataRequest) (*SendDataResponse, error) {
-	out := new(SendDataResponse)
-	ctx, err := doProtobufRequest(ctx, c.client, c.opts.Hooks, c.urls[5], in, out)
-	if err != nil {
-		twerr, ok := err.(twirp.Error)
-		if !ok {
-			twerr = twirp.InternalErrorWith(err)
-		}
-		callClientError(ctx, c.opts.Hooks, twerr)
-		return nil, err
-	}
-
-	callClientResponseReceived(ctx, c.opts.Hooks)
-
-	return out, nil
-}
-
 func (c *roomServiceProtobufClient) RemoveParticipant(ctx context.Context, in *RoomParticipantIdentity) (*RemoveParticipantResponse, error) {
 	ctx = ctxsetters.WithPackageName(ctx, "livekit")
 	ctx = ctxsetters.WithServiceName(ctx, "RoomService")
@@ -415,7 +185,7 @@ func (c *roomServiceProtobufClient) RemoveParticipant(ctx context.Context, in *R
 
 func (c *roomServiceProtobufClient) callRemoveParticipant(ctx context.Context, in *RoomParticipantIdentity) (*RemoveParticipantResponse, error) {
 	out := new(RemoveParticipantResponse)
-	ctx, err := doProtobufRequest(ctx, c.client, c.opts.Hooks, c.urls[6], in, out)
+	ctx, err := doProtobufRequest(ctx, c.client, c.opts.Hooks, c.urls[1], in, out)
 	if err != nil {
 		twerr, ok := err.(twirp.Error)
 		if !ok {
@@ -461,6 +231,236 @@ func (c *roomServiceProtobufClient) MutePublishedTrack(ctx context.Context, in *
 
 func (c *roomServiceProtobufClient) callMutePublishedTrack(ctx context.Context, in *MuteRoomTrackRequest) (*MuteRoomTrackResponse, error) {
 	out := new(MuteRoomTrackResponse)
+	ctx, err := doProtobufRequest(ctx, c.client, c.opts.Hooks, c.urls[2], in, out)
+	if err != nil {
+		twerr, ok := err.(twirp.Error)
+		if !ok {
+			twerr = twirp.InternalErrorWith(err)
+		}
+		callClientError(ctx, c.opts.Hooks, twerr)
+		return nil, err
+	}
+
+	callClientResponseReceived(ctx, c.opts.Hooks)
+
+	return out, nil
+}
+
+func (c *roomServiceProtobufClient) ListParticipants(ctx context.Context, in *ListParticipantsRequest) (*ListParticipantsResponse, error) {
+	ctx = ctxsetters.WithPackageName(ctx, "livekit")
+	ctx = ctxsetters.WithServiceName(ctx, "RoomService")
+	ctx = ctxsetters.WithMethodName(ctx, "ListParticipants")
+	caller := c.callListParticipants
+	if c.interceptor != nil {
+		caller = func(ctx context.Context, req *ListParticipantsRequest) (*ListParticipantsResponse, error) {
+			resp, err := c.interceptor(
+				func(ctx context.Context, req interface{}) (interface{}, error) {
+					typedReq, ok := req.(*ListParticipantsRequest)
+					if !ok {
+						return nil, twirp.InternalError("failed type assertion req.(*ListParticipantsRequest) when calling interceptor")
+					}
+					return c.callListParticipants(ctx, typedReq)
+				},
+			)(ctx, req)
+			if resp != nil {
+				typedResp, ok := resp.(*ListParticipantsResponse)
+				if !ok {
+					return nil, twirp.InternalError("failed type assertion resp.(*ListParticipantsResponse) when calling interceptor")
+				}
+				return typedResp, err
+			}
+			return nil, err
+		}
+	}
+	return caller(ctx, in)
+}
+
+func (c *roomServiceProtobufClient) callListParticipants(ctx context.Context, in *ListParticipantsRequest) (*ListParticipantsResponse, error) {
+	out := new(ListParticipantsResponse)
+	ctx, err := doProtobufRequest(ctx, c.client, c.opts.Hooks, c.urls[3], in, out)
+	if err != nil {
+		twerr, ok := err.(twirp.Error)
+		if !ok {
+			twerr = twirp.InternalErrorWith(err)
+		}
+		callClientError(ctx, c.opts.Hooks, twerr)
+		return nil, err
+	}
+
+	callClientResponseReceived(ctx, c.opts.Hooks)
+
+	return out, nil
+}
+
+func (c *roomServiceProtobufClient) GetParticipant(ctx context.Context, in *RoomParticipantIdentity) (*ParticipantInfo, error) {
+	ctx = ctxsetters.WithPackageName(ctx, "livekit")
+	ctx = ctxsetters.WithServiceName(ctx, "RoomService")
+	ctx = ctxsetters.WithMethodName(ctx, "GetParticipant")
+	caller := c.callGetParticipant
+	if c.interceptor != nil {
+		caller = func(ctx context.Context, req *RoomParticipantIdentity) (*ParticipantInfo, error) {
+			resp, err := c.interceptor(
+				func(ctx context.Context, req interface{}) (interface{}, error) {
+					typedReq, ok := req.(*RoomParticipantIdentity)
+					if !ok {
+						return nil, twirp.InternalError("failed type assertion req.(*RoomParticipantIdentity) when calling interceptor")
+					}
+					return c.callGetParticipant(ctx, typedReq)
+				},
+			)(ctx, req)
+			if resp != nil {
+				typedResp, ok := resp.(*ParticipantInfo)
+				if !ok {
+					return nil, twirp.InternalError("failed type assertion resp.(*ParticipantInfo) when calling interceptor")
+				}
+				return typedResp, err
+			}
+			return nil, err
+		}
+	}
+	return caller(ctx, in)
+}
+
+func (c *roomServiceProtobufClient) callGetParticipant(ctx context.Context, in *RoomParticipantIdentity) (*ParticipantInfo, error) {
+	out := new(ParticipantInfo)
+	ctx, err := doProtobufRequest(ctx, c.client, c.opts.Hooks, c.urls[4], in, out)
+	if err != nil {
+		twerr, ok := err.(twirp.Error)
+		if !ok {
+			twerr = twirp.InternalErrorWith(err)
+		}
+		callClientError(ctx, c.opts.Hooks, twerr)
+		return nil, err
+	}
+
+	callClientResponseReceived(ctx, c.opts.Hooks)
+
+	return out, nil
+}
+
+func (c *roomServiceProtobufClient) UpdateParticipant(ctx context.Context, in *UpdateParticipantRequest) (*ParticipantInfo, error) {
+	ctx = ctxsetters.WithPackageName(ctx, "livekit")
+	ctx = ctxsetters.WithServiceName(ctx, "RoomService")
+	ctx = ctxsetters.WithMethodName(ctx, "UpdateParticipant")
+	caller := c.callUpdateParticipant
+	if c.interceptor != nil {
+		caller = func(ctx context.Context, req *UpdateParticipantRequest) (*ParticipantInfo, error) {
+			resp, err := c.interceptor(
+				func(ctx context.Context, req interface{}) (interface{}, error) {
+					typedReq, ok := req.(*UpdateParticipantRequest)
+					if !ok {
+						return nil, twirp.InternalError("failed type assertion req.(*UpdateParticipantRequest) when calling interceptor")
+					}
+					return c.callUpdateParticipant(ctx, typedReq)
+				},
+			)(ctx, req)
+			if resp != nil {
+				typedResp, ok := resp.(*ParticipantInfo)
+				if !ok {
+					return nil, twirp.InternalError("failed type assertion resp.(*ParticipantInfo) when calling interceptor")
+				}
+				return typedResp, err
+			}
+			return nil, err
+		}
+	}
+	return caller(ctx, in)
+}
+
+func (c *roomServiceProtobufClient) callUpdateParticipant(ctx context.Context, in *UpdateParticipantRequest) (*ParticipantInfo, error) {
+	out := new(ParticipantInfo)
+	ctx, err := doProtobufRequest(ctx, c.client, c.opts.Hooks, c.urls[5], in, out)
+	if err != nil {
+		twerr, ok := err.(twirp.Error)
+		if !ok {
+			twerr = twirp.InternalErrorWith(err)
+		}
+		callClientError(ctx, c.opts.Hooks, twerr)
+		return nil, err
+	}
+
+	callClientResponseReceived(ctx, c.opts.Hooks)
+
+	return out, nil
+}
+
+func (c *roomServiceProtobufClient) UpdateSubscriptions(ctx context.Context, in *UpdateSubscriptionsRequest) (*UpdateSubscriptionsResponse, error) {
+	ctx = ctxsetters.WithPackageName(ctx, "livekit")
+	ctx = ctxsetters.WithServiceName(ctx, "RoomService")
+	ctx = ctxsetters.WithMethodName(ctx, "UpdateSubscriptions")
+	caller := c.callUpdateSubscriptions
+	if c.interceptor != nil {
+		caller = func(ctx context.Context, req *UpdateSubscriptionsRequest) (*UpdateSubscriptionsResponse, error) {
+			resp, err := c.interceptor(
+				func(ctx context.Context, req interface{}) (interface{}, error) {
+					typedReq, ok := req.(*UpdateSubscriptionsRequest)
+					if !ok {
+						return nil, twirp.InternalError("failed type assertion req.(*UpdateSubscriptionsRequest) when calling interceptor")
+					}
+					return c.callUpdateSubscriptions(ctx, typedReq)
+				},
+			)(ctx, req)
+			if resp != nil {
+				typedResp, ok := resp.(*UpdateSubscriptionsResponse)
+				if !ok {
+					return nil, twirp.InternalError("failed type assertion resp.(*UpdateSubscriptionsResponse) when calling interceptor")
+				}
+				return typedResp, err
+			}
+			return nil, err
+		}
+	}
+	return caller(ctx, in)
+}
+
+func (c *roomServiceProtobufClient) callUpdateSubscriptions(ctx context.Context, in *UpdateSubscriptionsRequest) (*UpdateSubscriptionsResponse, error) {
+	out := new(UpdateSubscriptionsResponse)
+	ctx, err := doProtobufRequest(ctx, c.client, c.opts.Hooks, c.urls[6], in, out)
+	if err != nil {
+		twerr, ok := err.(twirp.Error)
+		if !ok {
+			twerr = twirp.InternalErrorWith(err)
+		}
+		callClientError(ctx, c.opts.Hooks, twerr)
+		return nil, err
+	}
+
+	callClientResponseReceived(ctx, c.opts.Hooks)
+
+	return out, nil
+}
+
+func (c *roomServiceProtobufClient) SendData(ctx context.Context, in *SendDataRequest) (*SendDataResponse, error) {
+	ctx = ctxsetters.WithPackageName(ctx, "livekit")
+	ctx = ctxsetters.WithServiceName(ctx, "RoomService")
+	ctx = ctxsetters.WithMethodName(ctx, "SendData")
+	caller := c.callSendData
+	if c.interceptor != nil {
+		caller = func(ctx context.Context, req *SendDataRequest) (*SendDataResponse, error) {
+			resp, err := c.interceptor(
+				func(ctx context.Context, req interface{}) (interface{}, error) {
+					typedReq, ok := req.(*SendDataRequest)
+					if !ok {
+						return nil, twirp.InternalError("failed type assertion req.(*SendDataRequest) when calling interceptor")
+					}
+					return c.callSendData(ctx, typedReq)
+				},
+			)(ctx, req)
+			if resp != nil {
+				typedResp, ok := resp.(*SendDataResponse)
+				if !ok {
+					return nil, twirp.InternalError("failed type assertion resp.(*SendDataResponse) when calling interceptor")
+				}
+				return typedResp, err
+			}
+			return nil, err
+		}
+	}
+	return caller(ctx, in)
+}
+
+func (c *roomServiceProtobufClient) callSendData(ctx context.Context, in *SendDataRequest) (*SendDataResponse, error) {
+	out := new(SendDataResponse)
 	ctx, err := doProtobufRequest(ctx, c.client, c.opts.Hooks, c.urls[7], in, out)
 	if err != nil {
 		twerr, ok := err.(twirp.Error)
@@ -512,13 +512,13 @@ func NewRoomServiceJSONClient(baseURL string, client HTTPClient, opts ...twirp.C
 	serviceURL += baseServicePath(pathPrefix, "livekit", "RoomService")
 	urls := [8]string{
 		serviceURL + "DeleteRoom",
+		serviceURL + "RemoveParticipant",
+		serviceURL + "MutePublishedTrack",
 		serviceURL + "ListParticipants",
 		serviceURL + "GetParticipant",
 		serviceURL + "UpdateParticipant",
 		serviceURL + "UpdateSubscriptions",
 		serviceURL + "SendData",
-		serviceURL + "RemoveParticipant",
-		serviceURL + "MutePublishedTrack",
 	}
 
 	return &roomServiceJSONClient{
@@ -575,236 +575,6 @@ func (c *roomServiceJSONClient) callDeleteRoom(ctx context.Context, in *DeleteRo
 	return out, nil
 }
 
-func (c *roomServiceJSONClient) ListParticipants(ctx context.Context, in *ListParticipantsRequest) (*ListParticipantsResponse, error) {
-	ctx = ctxsetters.WithPackageName(ctx, "livekit")
-	ctx = ctxsetters.WithServiceName(ctx, "RoomService")
-	ctx = ctxsetters.WithMethodName(ctx, "ListParticipants")
-	caller := c.callListParticipants
-	if c.interceptor != nil {
-		caller = func(ctx context.Context, req *ListParticipantsRequest) (*ListParticipantsResponse, error) {
-			resp, err := c.interceptor(
-				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*ListParticipantsRequest)
-					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*ListParticipantsRequest) when calling interceptor")
-					}
-					return c.callListParticipants(ctx, typedReq)
-				},
-			)(ctx, req)
-			if resp != nil {
-				typedResp, ok := resp.(*ListParticipantsResponse)
-				if !ok {
-					return nil, twirp.InternalError("failed type assertion resp.(*ListParticipantsResponse) when calling interceptor")
-				}
-				return typedResp, err
-			}
-			return nil, err
-		}
-	}
-	return caller(ctx, in)
-}
-
-func (c *roomServiceJSONClient) callListParticipants(ctx context.Context, in *ListParticipantsRequest) (*ListParticipantsResponse, error) {
-	out := new(ListParticipantsResponse)
-	ctx, err := doJSONRequest(ctx, c.client, c.opts.Hooks, c.urls[1], in, out)
-	if err != nil {
-		twerr, ok := err.(twirp.Error)
-		if !ok {
-			twerr = twirp.InternalErrorWith(err)
-		}
-		callClientError(ctx, c.opts.Hooks, twerr)
-		return nil, err
-	}
-
-	callClientResponseReceived(ctx, c.opts.Hooks)
-
-	return out, nil
-}
-
-func (c *roomServiceJSONClient) GetParticipant(ctx context.Context, in *RoomParticipantIdentity) (*ParticipantInfo, error) {
-	ctx = ctxsetters.WithPackageName(ctx, "livekit")
-	ctx = ctxsetters.WithServiceName(ctx, "RoomService")
-	ctx = ctxsetters.WithMethodName(ctx, "GetParticipant")
-	caller := c.callGetParticipant
-	if c.interceptor != nil {
-		caller = func(ctx context.Context, req *RoomParticipantIdentity) (*ParticipantInfo, error) {
-			resp, err := c.interceptor(
-				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*RoomParticipantIdentity)
-					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*RoomParticipantIdentity) when calling interceptor")
-					}
-					return c.callGetParticipant(ctx, typedReq)
-				},
-			)(ctx, req)
-			if resp != nil {
-				typedResp, ok := resp.(*ParticipantInfo)
-				if !ok {
-					return nil, twirp.InternalError("failed type assertion resp.(*ParticipantInfo) when calling interceptor")
-				}
-				return typedResp, err
-			}
-			return nil, err
-		}
-	}
-	return caller(ctx, in)
-}
-
-func (c *roomServiceJSONClient) callGetParticipant(ctx context.Context, in *RoomParticipantIdentity) (*ParticipantInfo, error) {
-	out := new(ParticipantInfo)
-	ctx, err := doJSONRequest(ctx, c.client, c.opts.Hooks, c.urls[2], in, out)
-	if err != nil {
-		twerr, ok := err.(twirp.Error)
-		if !ok {
-			twerr = twirp.InternalErrorWith(err)
-		}
-		callClientError(ctx, c.opts.Hooks, twerr)
-		return nil, err
-	}
-
-	callClientResponseReceived(ctx, c.opts.Hooks)
-
-	return out, nil
-}
-
-func (c *roomServiceJSONClient) UpdateParticipant(ctx context.Context, in *UpdateParticipantRequest) (*ParticipantInfo, error) {
-	ctx = ctxsetters.WithPackageName(ctx, "livekit")
-	ctx = ctxsetters.WithServiceName(ctx, "RoomService")
-	ctx = ctxsetters.WithMethodName(ctx, "UpdateParticipant")
-	caller := c.callUpdateParticipant
-	if c.interceptor != nil {
-		caller = func(ctx context.Context, req *UpdateParticipantRequest) (*ParticipantInfo, error) {
-			resp, err := c.interceptor(
-				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*UpdateParticipantRequest)
-					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*UpdateParticipantRequest) when calling interceptor")
-					}
-					return c.callUpdateParticipant(ctx, typedReq)
-				},
-			)(ctx, req)
-			if resp != nil {
-				typedResp, ok := resp.(*ParticipantInfo)
-				if !ok {
-					return nil, twirp.InternalError("failed type assertion resp.(*ParticipantInfo) when calling interceptor")
-				}
-				return typedResp, err
-			}
-			return nil, err
-		}
-	}
-	return caller(ctx, in)
-}
-
-func (c *roomServiceJSONClient) callUpdateParticipant(ctx context.Context, in *UpdateParticipantRequest) (*ParticipantInfo, error) {
-	out := new(ParticipantInfo)
-	ctx, err := doJSONRequest(ctx, c.client, c.opts.Hooks, c.urls[3], in, out)
-	if err != nil {
-		twerr, ok := err.(twirp.Error)
-		if !ok {
-			twerr = twirp.InternalErrorWith(err)
-		}
-		callClientError(ctx, c.opts.Hooks, twerr)
-		return nil, err
-	}
-
-	callClientResponseReceived(ctx, c.opts.Hooks)
-
-	return out, nil
-}
-
-func (c *roomServiceJSONClient) UpdateSubscriptions(ctx context.Context, in *UpdateSubscriptionsRequest) (*UpdateSubscriptionsResponse, error) {
-	ctx = ctxsetters.WithPackageName(ctx, "livekit")
-	ctx = ctxsetters.WithServiceName(ctx, "RoomService")
-	ctx = ctxsetters.WithMethodName(ctx, "UpdateSubscriptions")
-	caller := c.callUpdateSubscriptions
-	if c.interceptor != nil {
-		caller = func(ctx context.Context, req *UpdateSubscriptionsRequest) (*UpdateSubscriptionsResponse, error) {
-			resp, err := c.interceptor(
-				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*UpdateSubscriptionsRequest)
-					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*UpdateSubscriptionsRequest) when calling interceptor")
-					}
-					return c.callUpdateSubscriptions(ctx, typedReq)
-				},
-			)(ctx, req)
-			if resp != nil {
-				typedResp, ok := resp.(*UpdateSubscriptionsResponse)
-				if !ok {
-					return nil, twirp.InternalError("failed type assertion resp.(*UpdateSubscriptionsResponse) when calling interceptor")
-				}
-				return typedResp, err
-			}
-			return nil, err
-		}
-	}
-	return caller(ctx, in)
-}
-
-func (c *roomServiceJSONClient) callUpdateSubscriptions(ctx context.Context, in *UpdateSubscriptionsRequest) (*UpdateSubscriptionsResponse, error) {
-	out := new(UpdateSubscriptionsResponse)
-	ctx, err := doJSONRequest(ctx, c.client, c.opts.Hooks, c.urls[4], in, out)
-	if err != nil {
-		twerr, ok := err.(twirp.Error)
-		if !ok {
-			twerr = twirp.InternalErrorWith(err)
-		}
-		callClientError(ctx, c.opts.Hooks, twerr)
-		return nil, err
-	}
-
-	callClientResponseReceived(ctx, c.opts.Hooks)
-
-	return out, nil
-}
-
-func (c *roomServiceJSONClient) SendData(ctx context.Context, in *SendDataRequest) (*SendDataResponse, error) {
-	ctx = ctxsetters.WithPackageName(ctx, "livekit")
-	ctx = ctxsetters.WithServiceName(ctx, "RoomService")
-	ctx = ctxsetters.WithMethodName(ctx, "SendData")
-	caller := c.callSendData
-	if c.interceptor != nil {
-		caller = func(ctx context.Context, req *SendDataRequest) (*SendDataResponse, error) {
-			resp, err := c.interceptor(
-				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*SendDataRequest)
-					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*SendDataRequest) when calling interceptor")
-					}
-					return c.callSendData(ctx, typedReq)
-				},
-			)(ctx, req)
-			if resp != nil {
-				typedResp, ok := resp.(*SendDataResponse)
-				if !ok {
-					return nil, twirp.InternalError("failed type assertion resp.(*SendDataResponse) when calling interceptor")
-				}
-				return typedResp, err
-			}
-			return nil, err
-		}
-	}
-	return caller(ctx, in)
-}
-
-func (c *roomServiceJSONClient) callSendData(ctx context.Context, in *SendDataRequest) (*SendDataResponse, error) {
-	out := new(SendDataResponse)
-	ctx, err := doJSONRequest(ctx, c.client, c.opts.Hooks, c.urls[5], in, out)
-	if err != nil {
-		twerr, ok := err.(twirp.Error)
-		if !ok {
-			twerr = twirp.InternalErrorWith(err)
-		}
-		callClientError(ctx, c.opts.Hooks, twerr)
-		return nil, err
-	}
-
-	callClientResponseReceived(ctx, c.opts.Hooks)
-
-	return out, nil
-}
-
 func (c *roomServiceJSONClient) RemoveParticipant(ctx context.Context, in *RoomParticipantIdentity) (*RemoveParticipantResponse, error) {
 	ctx = ctxsetters.WithPackageName(ctx, "livekit")
 	ctx = ctxsetters.WithServiceName(ctx, "RoomService")
@@ -836,7 +606,7 @@ func (c *roomServiceJSONClient) RemoveParticipant(ctx context.Context, in *RoomP
 
 func (c *roomServiceJSONClient) callRemoveParticipant(ctx context.Context, in *RoomParticipantIdentity) (*RemoveParticipantResponse, error) {
 	out := new(RemoveParticipantResponse)
-	ctx, err := doJSONRequest(ctx, c.client, c.opts.Hooks, c.urls[6], in, out)
+	ctx, err := doJSONRequest(ctx, c.client, c.opts.Hooks, c.urls[1], in, out)
 	if err != nil {
 		twerr, ok := err.(twirp.Error)
 		if !ok {
@@ -882,6 +652,236 @@ func (c *roomServiceJSONClient) MutePublishedTrack(ctx context.Context, in *Mute
 
 func (c *roomServiceJSONClient) callMutePublishedTrack(ctx context.Context, in *MuteRoomTrackRequest) (*MuteRoomTrackResponse, error) {
 	out := new(MuteRoomTrackResponse)
+	ctx, err := doJSONRequest(ctx, c.client, c.opts.Hooks, c.urls[2], in, out)
+	if err != nil {
+		twerr, ok := err.(twirp.Error)
+		if !ok {
+			twerr = twirp.InternalErrorWith(err)
+		}
+		callClientError(ctx, c.opts.Hooks, twerr)
+		return nil, err
+	}
+
+	callClientResponseReceived(ctx, c.opts.Hooks)
+
+	return out, nil
+}
+
+func (c *roomServiceJSONClient) ListParticipants(ctx context.Context, in *ListParticipantsRequest) (*ListParticipantsResponse, error) {
+	ctx = ctxsetters.WithPackageName(ctx, "livekit")
+	ctx = ctxsetters.WithServiceName(ctx, "RoomService")
+	ctx = ctxsetters.WithMethodName(ctx, "ListParticipants")
+	caller := c.callListParticipants
+	if c.interceptor != nil {
+		caller = func(ctx context.Context, req *ListParticipantsRequest) (*ListParticipantsResponse, error) {
+			resp, err := c.interceptor(
+				func(ctx context.Context, req interface{}) (interface{}, error) {
+					typedReq, ok := req.(*ListParticipantsRequest)
+					if !ok {
+						return nil, twirp.InternalError("failed type assertion req.(*ListParticipantsRequest) when calling interceptor")
+					}
+					return c.callListParticipants(ctx, typedReq)
+				},
+			)(ctx, req)
+			if resp != nil {
+				typedResp, ok := resp.(*ListParticipantsResponse)
+				if !ok {
+					return nil, twirp.InternalError("failed type assertion resp.(*ListParticipantsResponse) when calling interceptor")
+				}
+				return typedResp, err
+			}
+			return nil, err
+		}
+	}
+	return caller(ctx, in)
+}
+
+func (c *roomServiceJSONClient) callListParticipants(ctx context.Context, in *ListParticipantsRequest) (*ListParticipantsResponse, error) {
+	out := new(ListParticipantsResponse)
+	ctx, err := doJSONRequest(ctx, c.client, c.opts.Hooks, c.urls[3], in, out)
+	if err != nil {
+		twerr, ok := err.(twirp.Error)
+		if !ok {
+			twerr = twirp.InternalErrorWith(err)
+		}
+		callClientError(ctx, c.opts.Hooks, twerr)
+		return nil, err
+	}
+
+	callClientResponseReceived(ctx, c.opts.Hooks)
+
+	return out, nil
+}
+
+func (c *roomServiceJSONClient) GetParticipant(ctx context.Context, in *RoomParticipantIdentity) (*ParticipantInfo, error) {
+	ctx = ctxsetters.WithPackageName(ctx, "livekit")
+	ctx = ctxsetters.WithServiceName(ctx, "RoomService")
+	ctx = ctxsetters.WithMethodName(ctx, "GetParticipant")
+	caller := c.callGetParticipant
+	if c.interceptor != nil {
+		caller = func(ctx context.Context, req *RoomParticipantIdentity) (*ParticipantInfo, error) {
+			resp, err := c.interceptor(
+				func(ctx context.Context, req interface{}) (interface{}, error) {
+					typedReq, ok := req.(*RoomParticipantIdentity)
+					if !ok {
+						return nil, twirp.InternalError("failed type assertion req.(*RoomParticipantIdentity) when calling interceptor")
+					}
+					return c.callGetParticipant(ctx, typedReq)
+				},
+			)(ctx, req)
+			if resp != nil {
+				typedResp, ok := resp.(*ParticipantInfo)
+				if !ok {
+					return nil, twirp.InternalError("failed type assertion resp.(*ParticipantInfo) when calling interceptor")
+				}
+				return typedResp, err
+			}
+			return nil, err
+		}
+	}
+	return caller(ctx, in)
+}
+
+func (c *roomServiceJSONClient) callGetParticipant(ctx context.Context, in *RoomParticipantIdentity) (*ParticipantInfo, error) {
+	out := new(ParticipantInfo)
+	ctx, err := doJSONRequest(ctx, c.client, c.opts.Hooks, c.urls[4], in, out)
+	if err != nil {
+		twerr, ok := err.(twirp.Error)
+		if !ok {
+			twerr = twirp.InternalErrorWith(err)
+		}
+		callClientError(ctx, c.opts.Hooks, twerr)
+		return nil, err
+	}
+
+	callClientResponseReceived(ctx, c.opts.Hooks)
+
+	return out, nil
+}
+
+func (c *roomServiceJSONClient) UpdateParticipant(ctx context.Context, in *UpdateParticipantRequest) (*ParticipantInfo, error) {
+	ctx = ctxsetters.WithPackageName(ctx, "livekit")
+	ctx = ctxsetters.WithServiceName(ctx, "RoomService")
+	ctx = ctxsetters.WithMethodName(ctx, "UpdateParticipant")
+	caller := c.callUpdateParticipant
+	if c.interceptor != nil {
+		caller = func(ctx context.Context, req *UpdateParticipantRequest) (*ParticipantInfo, error) {
+			resp, err := c.interceptor(
+				func(ctx context.Context, req interface{}) (interface{}, error) {
+					typedReq, ok := req.(*UpdateParticipantRequest)
+					if !ok {
+						return nil, twirp.InternalError("failed type assertion req.(*UpdateParticipantRequest) when calling interceptor")
+					}
+					return c.callUpdateParticipant(ctx, typedReq)
+				},
+			)(ctx, req)
+			if resp != nil {
+				typedResp, ok := resp.(*ParticipantInfo)
+				if !ok {
+					return nil, twirp.InternalError("failed type assertion resp.(*ParticipantInfo) when calling interceptor")
+				}
+				return typedResp, err
+			}
+			return nil, err
+		}
+	}
+	return caller(ctx, in)
+}
+
+func (c *roomServiceJSONClient) callUpdateParticipant(ctx context.Context, in *UpdateParticipantRequest) (*ParticipantInfo, error) {
+	out := new(ParticipantInfo)
+	ctx, err := doJSONRequest(ctx, c.client, c.opts.Hooks, c.urls[5], in, out)
+	if err != nil {
+		twerr, ok := err.(twirp.Error)
+		if !ok {
+			twerr = twirp.InternalErrorWith(err)
+		}
+		callClientError(ctx, c.opts.Hooks, twerr)
+		return nil, err
+	}
+
+	callClientResponseReceived(ctx, c.opts.Hooks)
+
+	return out, nil
+}
+
+func (c *roomServiceJSONClient) UpdateSubscriptions(ctx context.Context, in *UpdateSubscriptionsRequest) (*UpdateSubscriptionsResponse, error) {
+	ctx = ctxsetters.WithPackageName(ctx, "livekit")
+	ctx = ctxsetters.WithServiceName(ctx, "RoomService")
+	ctx = ctxsetters.WithMethodName(ctx, "UpdateSubscriptions")
+	caller := c.callUpdateSubscriptions
+	if c.interceptor != nil {
+		caller = func(ctx context.Context, req *UpdateSubscriptionsRequest) (*UpdateSubscriptionsResponse, error) {
+			resp, err := c.interceptor(
+				func(ctx context.Context, req interface{}) (interface{}, error) {
+					typedReq, ok := req.(*UpdateSubscriptionsRequest)
+					if !ok {
+						return nil, twirp.InternalError("failed type assertion req.(*UpdateSubscriptionsRequest) when calling interceptor")
+					}
+					return c.callUpdateSubscriptions(ctx, typedReq)
+				},
+			)(ctx, req)
+			if resp != nil {
+				typedResp, ok := resp.(*UpdateSubscriptionsResponse)
+				if !ok {
+					return nil, twirp.InternalError("failed type assertion resp.(*UpdateSubscriptionsResponse) when calling interceptor")
+				}
+				return typedResp, err
+			}
+			return nil, err
+		}
+	}
+	return caller(ctx, in)
+}
+
+func (c *roomServiceJSONClient) callUpdateSubscriptions(ctx context.Context, in *UpdateSubscriptionsRequest) (*UpdateSubscriptionsResponse, error) {
+	out := new(UpdateSubscriptionsResponse)
+	ctx, err := doJSONRequest(ctx, c.client, c.opts.Hooks, c.urls[6], in, out)
+	if err != nil {
+		twerr, ok := err.(twirp.Error)
+		if !ok {
+			twerr = twirp.InternalErrorWith(err)
+		}
+		callClientError(ctx, c.opts.Hooks, twerr)
+		return nil, err
+	}
+
+	callClientResponseReceived(ctx, c.opts.Hooks)
+
+	return out, nil
+}
+
+func (c *roomServiceJSONClient) SendData(ctx context.Context, in *SendDataRequest) (*SendDataResponse, error) {
+	ctx = ctxsetters.WithPackageName(ctx, "livekit")
+	ctx = ctxsetters.WithServiceName(ctx, "RoomService")
+	ctx = ctxsetters.WithMethodName(ctx, "SendData")
+	caller := c.callSendData
+	if c.interceptor != nil {
+		caller = func(ctx context.Context, req *SendDataRequest) (*SendDataResponse, error) {
+			resp, err := c.interceptor(
+				func(ctx context.Context, req interface{}) (interface{}, error) {
+					typedReq, ok := req.(*SendDataRequest)
+					if !ok {
+						return nil, twirp.InternalError("failed type assertion req.(*SendDataRequest) when calling interceptor")
+					}
+					return c.callSendData(ctx, typedReq)
+				},
+			)(ctx, req)
+			if resp != nil {
+				typedResp, ok := resp.(*SendDataResponse)
+				if !ok {
+					return nil, twirp.InternalError("failed type assertion resp.(*SendDataResponse) when calling interceptor")
+				}
+				return typedResp, err
+			}
+			return nil, err
+		}
+	}
+	return caller(ctx, in)
+}
+
+func (c *roomServiceJSONClient) callSendData(ctx context.Context, in *SendDataRequest) (*SendDataResponse, error) {
+	out := new(SendDataResponse)
 	ctx, err := doJSONRequest(ctx, c.client, c.opts.Hooks, c.urls[7], in, out)
 	if err != nil {
 		twerr, ok := err.(twirp.Error)
@@ -997,6 +997,12 @@ func (s *roomServiceServer) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 	case "DeleteRoom":
 		s.serveDeleteRoom(ctx, resp, req)
 		return
+	case "RemoveParticipant":
+		s.serveRemoveParticipant(ctx, resp, req)
+		return
+	case "MutePublishedTrack":
+		s.serveMutePublishedTrack(ctx, resp, req)
+		return
 	case "ListParticipants":
 		s.serveListParticipants(ctx, resp, req)
 		return
@@ -1011,12 +1017,6 @@ func (s *roomServiceServer) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 		return
 	case "SendData":
 		s.serveSendData(ctx, resp, req)
-		return
-	case "RemoveParticipant":
-		s.serveRemoveParticipant(ctx, resp, req)
-		return
-	case "MutePublishedTrack":
-		s.serveMutePublishedTrack(ctx, resp, req)
 		return
 	default:
 		msg := fmt.Sprintf("no handler for path %q", req.URL.Path)
@@ -1182,6 +1182,366 @@ func (s *roomServiceServer) serveDeleteRoomProtobuf(ctx context.Context, resp ht
 	}
 	if respContent == nil {
 		s.writeError(ctx, resp, twirp.InternalError("received a nil *DeleteRoomResponse and nil error while calling DeleteRoom. nil responses are not supported"))
+		return
+	}
+
+	ctx = callResponsePrepared(ctx, s.hooks)
+
+	respBytes, err := proto.Marshal(respContent)
+	if err != nil {
+		s.writeError(ctx, resp, wrapInternal(err, "failed to marshal proto response"))
+		return
+	}
+
+	ctx = ctxsetters.WithStatusCode(ctx, http.StatusOK)
+	resp.Header().Set("Content-Type", "application/protobuf")
+	resp.Header().Set("Content-Length", strconv.Itoa(len(respBytes)))
+	resp.WriteHeader(http.StatusOK)
+	if n, err := resp.Write(respBytes); err != nil {
+		msg := fmt.Sprintf("failed to write response, %d of %d bytes written: %s", n, len(respBytes), err.Error())
+		twerr := twirp.NewError(twirp.Unknown, msg)
+		ctx = callError(ctx, s.hooks, twerr)
+	}
+	callResponseSent(ctx, s.hooks)
+}
+
+func (s *roomServiceServer) serveRemoveParticipant(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
+	header := req.Header.Get("Content-Type")
+	i := strings.Index(header, ";")
+	if i == -1 {
+		i = len(header)
+	}
+	switch strings.TrimSpace(strings.ToLower(header[:i])) {
+	case "application/json":
+		s.serveRemoveParticipantJSON(ctx, resp, req)
+	case "application/protobuf":
+		s.serveRemoveParticipantProtobuf(ctx, resp, req)
+	default:
+		msg := fmt.Sprintf("unexpected Content-Type: %q", req.Header.Get("Content-Type"))
+		twerr := badRouteError(msg, req.Method, req.URL.Path)
+		s.writeError(ctx, resp, twerr)
+	}
+}
+
+func (s *roomServiceServer) serveRemoveParticipantJSON(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
+	var err error
+	ctx = ctxsetters.WithMethodName(ctx, "RemoveParticipant")
+	ctx, err = callRequestRouted(ctx, s.hooks)
+	if err != nil {
+		s.writeError(ctx, resp, err)
+		return
+	}
+
+	d := json.NewDecoder(req.Body)
+	rawReqBody := json.RawMessage{}
+	if err := d.Decode(&rawReqBody); err != nil {
+		s.handleRequestBodyError(ctx, resp, "the json request could not be decoded", err)
+		return
+	}
+	reqContent := new(RoomParticipantIdentity)
+	unmarshaler := protojson.UnmarshalOptions{DiscardUnknown: true}
+	if err = unmarshaler.Unmarshal(rawReqBody, reqContent); err != nil {
+		s.handleRequestBodyError(ctx, resp, "the json request could not be decoded", err)
+		return
+	}
+
+	handler := s.RoomService.RemoveParticipant
+	if s.interceptor != nil {
+		handler = func(ctx context.Context, req *RoomParticipantIdentity) (*RemoveParticipantResponse, error) {
+			resp, err := s.interceptor(
+				func(ctx context.Context, req interface{}) (interface{}, error) {
+					typedReq, ok := req.(*RoomParticipantIdentity)
+					if !ok {
+						return nil, twirp.InternalError("failed type assertion req.(*RoomParticipantIdentity) when calling interceptor")
+					}
+					return s.RoomService.RemoveParticipant(ctx, typedReq)
+				},
+			)(ctx, req)
+			if resp != nil {
+				typedResp, ok := resp.(*RemoveParticipantResponse)
+				if !ok {
+					return nil, twirp.InternalError("failed type assertion resp.(*RemoveParticipantResponse) when calling interceptor")
+				}
+				return typedResp, err
+			}
+			return nil, err
+		}
+	}
+
+	// Call service method
+	var respContent *RemoveParticipantResponse
+	func() {
+		defer ensurePanicResponses(ctx, resp, s.hooks)
+		respContent, err = handler(ctx, reqContent)
+	}()
+
+	if err != nil {
+		s.writeError(ctx, resp, err)
+		return
+	}
+	if respContent == nil {
+		s.writeError(ctx, resp, twirp.InternalError("received a nil *RemoveParticipantResponse and nil error while calling RemoveParticipant. nil responses are not supported"))
+		return
+	}
+
+	ctx = callResponsePrepared(ctx, s.hooks)
+
+	marshaler := &protojson.MarshalOptions{UseProtoNames: !s.jsonCamelCase, EmitUnpopulated: !s.jsonSkipDefaults}
+	respBytes, err := marshaler.Marshal(respContent)
+	if err != nil {
+		s.writeError(ctx, resp, wrapInternal(err, "failed to marshal json response"))
+		return
+	}
+
+	ctx = ctxsetters.WithStatusCode(ctx, http.StatusOK)
+	resp.Header().Set("Content-Type", "application/json")
+	resp.Header().Set("Content-Length", strconv.Itoa(len(respBytes)))
+	resp.WriteHeader(http.StatusOK)
+
+	if n, err := resp.Write(respBytes); err != nil {
+		msg := fmt.Sprintf("failed to write response, %d of %d bytes written: %s", n, len(respBytes), err.Error())
+		twerr := twirp.NewError(twirp.Unknown, msg)
+		ctx = callError(ctx, s.hooks, twerr)
+	}
+	callResponseSent(ctx, s.hooks)
+}
+
+func (s *roomServiceServer) serveRemoveParticipantProtobuf(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
+	var err error
+	ctx = ctxsetters.WithMethodName(ctx, "RemoveParticipant")
+	ctx, err = callRequestRouted(ctx, s.hooks)
+	if err != nil {
+		s.writeError(ctx, resp, err)
+		return
+	}
+
+	buf, err := io.ReadAll(req.Body)
+	if err != nil {
+		s.handleRequestBodyError(ctx, resp, "failed to read request body", err)
+		return
+	}
+	reqContent := new(RoomParticipantIdentity)
+	if err = proto.Unmarshal(buf, reqContent); err != nil {
+		s.writeError(ctx, resp, malformedRequestError("the protobuf request could not be decoded"))
+		return
+	}
+
+	handler := s.RoomService.RemoveParticipant
+	if s.interceptor != nil {
+		handler = func(ctx context.Context, req *RoomParticipantIdentity) (*RemoveParticipantResponse, error) {
+			resp, err := s.interceptor(
+				func(ctx context.Context, req interface{}) (interface{}, error) {
+					typedReq, ok := req.(*RoomParticipantIdentity)
+					if !ok {
+						return nil, twirp.InternalError("failed type assertion req.(*RoomParticipantIdentity) when calling interceptor")
+					}
+					return s.RoomService.RemoveParticipant(ctx, typedReq)
+				},
+			)(ctx, req)
+			if resp != nil {
+				typedResp, ok := resp.(*RemoveParticipantResponse)
+				if !ok {
+					return nil, twirp.InternalError("failed type assertion resp.(*RemoveParticipantResponse) when calling interceptor")
+				}
+				return typedResp, err
+			}
+			return nil, err
+		}
+	}
+
+	// Call service method
+	var respContent *RemoveParticipantResponse
+	func() {
+		defer ensurePanicResponses(ctx, resp, s.hooks)
+		respContent, err = handler(ctx, reqContent)
+	}()
+
+	if err != nil {
+		s.writeError(ctx, resp, err)
+		return
+	}
+	if respContent == nil {
+		s.writeError(ctx, resp, twirp.InternalError("received a nil *RemoveParticipantResponse and nil error while calling RemoveParticipant. nil responses are not supported"))
+		return
+	}
+
+	ctx = callResponsePrepared(ctx, s.hooks)
+
+	respBytes, err := proto.Marshal(respContent)
+	if err != nil {
+		s.writeError(ctx, resp, wrapInternal(err, "failed to marshal proto response"))
+		return
+	}
+
+	ctx = ctxsetters.WithStatusCode(ctx, http.StatusOK)
+	resp.Header().Set("Content-Type", "application/protobuf")
+	resp.Header().Set("Content-Length", strconv.Itoa(len(respBytes)))
+	resp.WriteHeader(http.StatusOK)
+	if n, err := resp.Write(respBytes); err != nil {
+		msg := fmt.Sprintf("failed to write response, %d of %d bytes written: %s", n, len(respBytes), err.Error())
+		twerr := twirp.NewError(twirp.Unknown, msg)
+		ctx = callError(ctx, s.hooks, twerr)
+	}
+	callResponseSent(ctx, s.hooks)
+}
+
+func (s *roomServiceServer) serveMutePublishedTrack(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
+	header := req.Header.Get("Content-Type")
+	i := strings.Index(header, ";")
+	if i == -1 {
+		i = len(header)
+	}
+	switch strings.TrimSpace(strings.ToLower(header[:i])) {
+	case "application/json":
+		s.serveMutePublishedTrackJSON(ctx, resp, req)
+	case "application/protobuf":
+		s.serveMutePublishedTrackProtobuf(ctx, resp, req)
+	default:
+		msg := fmt.Sprintf("unexpected Content-Type: %q", req.Header.Get("Content-Type"))
+		twerr := badRouteError(msg, req.Method, req.URL.Path)
+		s.writeError(ctx, resp, twerr)
+	}
+}
+
+func (s *roomServiceServer) serveMutePublishedTrackJSON(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
+	var err error
+	ctx = ctxsetters.WithMethodName(ctx, "MutePublishedTrack")
+	ctx, err = callRequestRouted(ctx, s.hooks)
+	if err != nil {
+		s.writeError(ctx, resp, err)
+		return
+	}
+
+	d := json.NewDecoder(req.Body)
+	rawReqBody := json.RawMessage{}
+	if err := d.Decode(&rawReqBody); err != nil {
+		s.handleRequestBodyError(ctx, resp, "the json request could not be decoded", err)
+		return
+	}
+	reqContent := new(MuteRoomTrackRequest)
+	unmarshaler := protojson.UnmarshalOptions{DiscardUnknown: true}
+	if err = unmarshaler.Unmarshal(rawReqBody, reqContent); err != nil {
+		s.handleRequestBodyError(ctx, resp, "the json request could not be decoded", err)
+		return
+	}
+
+	handler := s.RoomService.MutePublishedTrack
+	if s.interceptor != nil {
+		handler = func(ctx context.Context, req *MuteRoomTrackRequest) (*MuteRoomTrackResponse, error) {
+			resp, err := s.interceptor(
+				func(ctx context.Context, req interface{}) (interface{}, error) {
+					typedReq, ok := req.(*MuteRoomTrackRequest)
+					if !ok {
+						return nil, twirp.InternalError("failed type assertion req.(*MuteRoomTrackRequest) when calling interceptor")
+					}
+					return s.RoomService.MutePublishedTrack(ctx, typedReq)
+				},
+			)(ctx, req)
+			if resp != nil {
+				typedResp, ok := resp.(*MuteRoomTrackResponse)
+				if !ok {
+					return nil, twirp.InternalError("failed type assertion resp.(*MuteRoomTrackResponse) when calling interceptor")
+				}
+				return typedResp, err
+			}
+			return nil, err
+		}
+	}
+
+	// Call service method
+	var respContent *MuteRoomTrackResponse
+	func() {
+		defer ensurePanicResponses(ctx, resp, s.hooks)
+		respContent, err = handler(ctx, reqContent)
+	}()
+
+	if err != nil {
+		s.writeError(ctx, resp, err)
+		return
+	}
+	if respContent == nil {
+		s.writeError(ctx, resp, twirp.InternalError("received a nil *MuteRoomTrackResponse and nil error while calling MutePublishedTrack. nil responses are not supported"))
+		return
+	}
+
+	ctx = callResponsePrepared(ctx, s.hooks)
+
+	marshaler := &protojson.MarshalOptions{UseProtoNames: !s.jsonCamelCase, EmitUnpopulated: !s.jsonSkipDefaults}
+	respBytes, err := marshaler.Marshal(respContent)
+	if err != nil {
+		s.writeError(ctx, resp, wrapInternal(err, "failed to marshal json response"))
+		return
+	}
+
+	ctx = ctxsetters.WithStatusCode(ctx, http.StatusOK)
+	resp.Header().Set("Content-Type", "application/json")
+	resp.Header().Set("Content-Length", strconv.Itoa(len(respBytes)))
+	resp.WriteHeader(http.StatusOK)
+
+	if n, err := resp.Write(respBytes); err != nil {
+		msg := fmt.Sprintf("failed to write response, %d of %d bytes written: %s", n, len(respBytes), err.Error())
+		twerr := twirp.NewError(twirp.Unknown, msg)
+		ctx = callError(ctx, s.hooks, twerr)
+	}
+	callResponseSent(ctx, s.hooks)
+}
+
+func (s *roomServiceServer) serveMutePublishedTrackProtobuf(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
+	var err error
+	ctx = ctxsetters.WithMethodName(ctx, "MutePublishedTrack")
+	ctx, err = callRequestRouted(ctx, s.hooks)
+	if err != nil {
+		s.writeError(ctx, resp, err)
+		return
+	}
+
+	buf, err := io.ReadAll(req.Body)
+	if err != nil {
+		s.handleRequestBodyError(ctx, resp, "failed to read request body", err)
+		return
+	}
+	reqContent := new(MuteRoomTrackRequest)
+	if err = proto.Unmarshal(buf, reqContent); err != nil {
+		s.writeError(ctx, resp, malformedRequestError("the protobuf request could not be decoded"))
+		return
+	}
+
+	handler := s.RoomService.MutePublishedTrack
+	if s.interceptor != nil {
+		handler = func(ctx context.Context, req *MuteRoomTrackRequest) (*MuteRoomTrackResponse, error) {
+			resp, err := s.interceptor(
+				func(ctx context.Context, req interface{}) (interface{}, error) {
+					typedReq, ok := req.(*MuteRoomTrackRequest)
+					if !ok {
+						return nil, twirp.InternalError("failed type assertion req.(*MuteRoomTrackRequest) when calling interceptor")
+					}
+					return s.RoomService.MutePublishedTrack(ctx, typedReq)
+				},
+			)(ctx, req)
+			if resp != nil {
+				typedResp, ok := resp.(*MuteRoomTrackResponse)
+				if !ok {
+					return nil, twirp.InternalError("failed type assertion resp.(*MuteRoomTrackResponse) when calling interceptor")
+				}
+				return typedResp, err
+			}
+			return nil, err
+		}
+	}
+
+	// Call service method
+	var respContent *MuteRoomTrackResponse
+	func() {
+		defer ensurePanicResponses(ctx, resp, s.hooks)
+		respContent, err = handler(ctx, reqContent)
+	}()
+
+	if err != nil {
+		s.writeError(ctx, resp, err)
+		return
+	}
+	if respContent == nil {
+		s.writeError(ctx, resp, twirp.InternalError("received a nil *MuteRoomTrackResponse and nil error while calling MutePublishedTrack. nil responses are not supported"))
 		return
 	}
 
@@ -2105,366 +2465,6 @@ func (s *roomServiceServer) serveSendDataProtobuf(ctx context.Context, resp http
 	callResponseSent(ctx, s.hooks)
 }
 
-func (s *roomServiceServer) serveRemoveParticipant(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
-	header := req.Header.Get("Content-Type")
-	i := strings.Index(header, ";")
-	if i == -1 {
-		i = len(header)
-	}
-	switch strings.TrimSpace(strings.ToLower(header[:i])) {
-	case "application/json":
-		s.serveRemoveParticipantJSON(ctx, resp, req)
-	case "application/protobuf":
-		s.serveRemoveParticipantProtobuf(ctx, resp, req)
-	default:
-		msg := fmt.Sprintf("unexpected Content-Type: %q", req.Header.Get("Content-Type"))
-		twerr := badRouteError(msg, req.Method, req.URL.Path)
-		s.writeError(ctx, resp, twerr)
-	}
-}
-
-func (s *roomServiceServer) serveRemoveParticipantJSON(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
-	var err error
-	ctx = ctxsetters.WithMethodName(ctx, "RemoveParticipant")
-	ctx, err = callRequestRouted(ctx, s.hooks)
-	if err != nil {
-		s.writeError(ctx, resp, err)
-		return
-	}
-
-	d := json.NewDecoder(req.Body)
-	rawReqBody := json.RawMessage{}
-	if err := d.Decode(&rawReqBody); err != nil {
-		s.handleRequestBodyError(ctx, resp, "the json request could not be decoded", err)
-		return
-	}
-	reqContent := new(RoomParticipantIdentity)
-	unmarshaler := protojson.UnmarshalOptions{DiscardUnknown: true}
-	if err = unmarshaler.Unmarshal(rawReqBody, reqContent); err != nil {
-		s.handleRequestBodyError(ctx, resp, "the json request could not be decoded", err)
-		return
-	}
-
-	handler := s.RoomService.RemoveParticipant
-	if s.interceptor != nil {
-		handler = func(ctx context.Context, req *RoomParticipantIdentity) (*RemoveParticipantResponse, error) {
-			resp, err := s.interceptor(
-				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*RoomParticipantIdentity)
-					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*RoomParticipantIdentity) when calling interceptor")
-					}
-					return s.RoomService.RemoveParticipant(ctx, typedReq)
-				},
-			)(ctx, req)
-			if resp != nil {
-				typedResp, ok := resp.(*RemoveParticipantResponse)
-				if !ok {
-					return nil, twirp.InternalError("failed type assertion resp.(*RemoveParticipantResponse) when calling interceptor")
-				}
-				return typedResp, err
-			}
-			return nil, err
-		}
-	}
-
-	// Call service method
-	var respContent *RemoveParticipantResponse
-	func() {
-		defer ensurePanicResponses(ctx, resp, s.hooks)
-		respContent, err = handler(ctx, reqContent)
-	}()
-
-	if err != nil {
-		s.writeError(ctx, resp, err)
-		return
-	}
-	if respContent == nil {
-		s.writeError(ctx, resp, twirp.InternalError("received a nil *RemoveParticipantResponse and nil error while calling RemoveParticipant. nil responses are not supported"))
-		return
-	}
-
-	ctx = callResponsePrepared(ctx, s.hooks)
-
-	marshaler := &protojson.MarshalOptions{UseProtoNames: !s.jsonCamelCase, EmitUnpopulated: !s.jsonSkipDefaults}
-	respBytes, err := marshaler.Marshal(respContent)
-	if err != nil {
-		s.writeError(ctx, resp, wrapInternal(err, "failed to marshal json response"))
-		return
-	}
-
-	ctx = ctxsetters.WithStatusCode(ctx, http.StatusOK)
-	resp.Header().Set("Content-Type", "application/json")
-	resp.Header().Set("Content-Length", strconv.Itoa(len(respBytes)))
-	resp.WriteHeader(http.StatusOK)
-
-	if n, err := resp.Write(respBytes); err != nil {
-		msg := fmt.Sprintf("failed to write response, %d of %d bytes written: %s", n, len(respBytes), err.Error())
-		twerr := twirp.NewError(twirp.Unknown, msg)
-		ctx = callError(ctx, s.hooks, twerr)
-	}
-	callResponseSent(ctx, s.hooks)
-}
-
-func (s *roomServiceServer) serveRemoveParticipantProtobuf(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
-	var err error
-	ctx = ctxsetters.WithMethodName(ctx, "RemoveParticipant")
-	ctx, err = callRequestRouted(ctx, s.hooks)
-	if err != nil {
-		s.writeError(ctx, resp, err)
-		return
-	}
-
-	buf, err := io.ReadAll(req.Body)
-	if err != nil {
-		s.handleRequestBodyError(ctx, resp, "failed to read request body", err)
-		return
-	}
-	reqContent := new(RoomParticipantIdentity)
-	if err = proto.Unmarshal(buf, reqContent); err != nil {
-		s.writeError(ctx, resp, malformedRequestError("the protobuf request could not be decoded"))
-		return
-	}
-
-	handler := s.RoomService.RemoveParticipant
-	if s.interceptor != nil {
-		handler = func(ctx context.Context, req *RoomParticipantIdentity) (*RemoveParticipantResponse, error) {
-			resp, err := s.interceptor(
-				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*RoomParticipantIdentity)
-					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*RoomParticipantIdentity) when calling interceptor")
-					}
-					return s.RoomService.RemoveParticipant(ctx, typedReq)
-				},
-			)(ctx, req)
-			if resp != nil {
-				typedResp, ok := resp.(*RemoveParticipantResponse)
-				if !ok {
-					return nil, twirp.InternalError("failed type assertion resp.(*RemoveParticipantResponse) when calling interceptor")
-				}
-				return typedResp, err
-			}
-			return nil, err
-		}
-	}
-
-	// Call service method
-	var respContent *RemoveParticipantResponse
-	func() {
-		defer ensurePanicResponses(ctx, resp, s.hooks)
-		respContent, err = handler(ctx, reqContent)
-	}()
-
-	if err != nil {
-		s.writeError(ctx, resp, err)
-		return
-	}
-	if respContent == nil {
-		s.writeError(ctx, resp, twirp.InternalError("received a nil *RemoveParticipantResponse and nil error while calling RemoveParticipant. nil responses are not supported"))
-		return
-	}
-
-	ctx = callResponsePrepared(ctx, s.hooks)
-
-	respBytes, err := proto.Marshal(respContent)
-	if err != nil {
-		s.writeError(ctx, resp, wrapInternal(err, "failed to marshal proto response"))
-		return
-	}
-
-	ctx = ctxsetters.WithStatusCode(ctx, http.StatusOK)
-	resp.Header().Set("Content-Type", "application/protobuf")
-	resp.Header().Set("Content-Length", strconv.Itoa(len(respBytes)))
-	resp.WriteHeader(http.StatusOK)
-	if n, err := resp.Write(respBytes); err != nil {
-		msg := fmt.Sprintf("failed to write response, %d of %d bytes written: %s", n, len(respBytes), err.Error())
-		twerr := twirp.NewError(twirp.Unknown, msg)
-		ctx = callError(ctx, s.hooks, twerr)
-	}
-	callResponseSent(ctx, s.hooks)
-}
-
-func (s *roomServiceServer) serveMutePublishedTrack(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
-	header := req.Header.Get("Content-Type")
-	i := strings.Index(header, ";")
-	if i == -1 {
-		i = len(header)
-	}
-	switch strings.TrimSpace(strings.ToLower(header[:i])) {
-	case "application/json":
-		s.serveMutePublishedTrackJSON(ctx, resp, req)
-	case "application/protobuf":
-		s.serveMutePublishedTrackProtobuf(ctx, resp, req)
-	default:
-		msg := fmt.Sprintf("unexpected Content-Type: %q", req.Header.Get("Content-Type"))
-		twerr := badRouteError(msg, req.Method, req.URL.Path)
-		s.writeError(ctx, resp, twerr)
-	}
-}
-
-func (s *roomServiceServer) serveMutePublishedTrackJSON(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
-	var err error
-	ctx = ctxsetters.WithMethodName(ctx, "MutePublishedTrack")
-	ctx, err = callRequestRouted(ctx, s.hooks)
-	if err != nil {
-		s.writeError(ctx, resp, err)
-		return
-	}
-
-	d := json.NewDecoder(req.Body)
-	rawReqBody := json.RawMessage{}
-	if err := d.Decode(&rawReqBody); err != nil {
-		s.handleRequestBodyError(ctx, resp, "the json request could not be decoded", err)
-		return
-	}
-	reqContent := new(MuteRoomTrackRequest)
-	unmarshaler := protojson.UnmarshalOptions{DiscardUnknown: true}
-	if err = unmarshaler.Unmarshal(rawReqBody, reqContent); err != nil {
-		s.handleRequestBodyError(ctx, resp, "the json request could not be decoded", err)
-		return
-	}
-
-	handler := s.RoomService.MutePublishedTrack
-	if s.interceptor != nil {
-		handler = func(ctx context.Context, req *MuteRoomTrackRequest) (*MuteRoomTrackResponse, error) {
-			resp, err := s.interceptor(
-				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*MuteRoomTrackRequest)
-					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*MuteRoomTrackRequest) when calling interceptor")
-					}
-					return s.RoomService.MutePublishedTrack(ctx, typedReq)
-				},
-			)(ctx, req)
-			if resp != nil {
-				typedResp, ok := resp.(*MuteRoomTrackResponse)
-				if !ok {
-					return nil, twirp.InternalError("failed type assertion resp.(*MuteRoomTrackResponse) when calling interceptor")
-				}
-				return typedResp, err
-			}
-			return nil, err
-		}
-	}
-
-	// Call service method
-	var respContent *MuteRoomTrackResponse
-	func() {
-		defer ensurePanicResponses(ctx, resp, s.hooks)
-		respContent, err = handler(ctx, reqContent)
-	}()
-
-	if err != nil {
-		s.writeError(ctx, resp, err)
-		return
-	}
-	if respContent == nil {
-		s.writeError(ctx, resp, twirp.InternalError("received a nil *MuteRoomTrackResponse and nil error while calling MutePublishedTrack. nil responses are not supported"))
-		return
-	}
-
-	ctx = callResponsePrepared(ctx, s.hooks)
-
-	marshaler := &protojson.MarshalOptions{UseProtoNames: !s.jsonCamelCase, EmitUnpopulated: !s.jsonSkipDefaults}
-	respBytes, err := marshaler.Marshal(respContent)
-	if err != nil {
-		s.writeError(ctx, resp, wrapInternal(err, "failed to marshal json response"))
-		return
-	}
-
-	ctx = ctxsetters.WithStatusCode(ctx, http.StatusOK)
-	resp.Header().Set("Content-Type", "application/json")
-	resp.Header().Set("Content-Length", strconv.Itoa(len(respBytes)))
-	resp.WriteHeader(http.StatusOK)
-
-	if n, err := resp.Write(respBytes); err != nil {
-		msg := fmt.Sprintf("failed to write response, %d of %d bytes written: %s", n, len(respBytes), err.Error())
-		twerr := twirp.NewError(twirp.Unknown, msg)
-		ctx = callError(ctx, s.hooks, twerr)
-	}
-	callResponseSent(ctx, s.hooks)
-}
-
-func (s *roomServiceServer) serveMutePublishedTrackProtobuf(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
-	var err error
-	ctx = ctxsetters.WithMethodName(ctx, "MutePublishedTrack")
-	ctx, err = callRequestRouted(ctx, s.hooks)
-	if err != nil {
-		s.writeError(ctx, resp, err)
-		return
-	}
-
-	buf, err := io.ReadAll(req.Body)
-	if err != nil {
-		s.handleRequestBodyError(ctx, resp, "failed to read request body", err)
-		return
-	}
-	reqContent := new(MuteRoomTrackRequest)
-	if err = proto.Unmarshal(buf, reqContent); err != nil {
-		s.writeError(ctx, resp, malformedRequestError("the protobuf request could not be decoded"))
-		return
-	}
-
-	handler := s.RoomService.MutePublishedTrack
-	if s.interceptor != nil {
-		handler = func(ctx context.Context, req *MuteRoomTrackRequest) (*MuteRoomTrackResponse, error) {
-			resp, err := s.interceptor(
-				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*MuteRoomTrackRequest)
-					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*MuteRoomTrackRequest) when calling interceptor")
-					}
-					return s.RoomService.MutePublishedTrack(ctx, typedReq)
-				},
-			)(ctx, req)
-			if resp != nil {
-				typedResp, ok := resp.(*MuteRoomTrackResponse)
-				if !ok {
-					return nil, twirp.InternalError("failed type assertion resp.(*MuteRoomTrackResponse) when calling interceptor")
-				}
-				return typedResp, err
-			}
-			return nil, err
-		}
-	}
-
-	// Call service method
-	var respContent *MuteRoomTrackResponse
-	func() {
-		defer ensurePanicResponses(ctx, resp, s.hooks)
-		respContent, err = handler(ctx, reqContent)
-	}()
-
-	if err != nil {
-		s.writeError(ctx, resp, err)
-		return
-	}
-	if respContent == nil {
-		s.writeError(ctx, resp, twirp.InternalError("received a nil *MuteRoomTrackResponse and nil error while calling MutePublishedTrack. nil responses are not supported"))
-		return
-	}
-
-	ctx = callResponsePrepared(ctx, s.hooks)
-
-	respBytes, err := proto.Marshal(respContent)
-	if err != nil {
-		s.writeError(ctx, resp, wrapInternal(err, "failed to marshal proto response"))
-		return
-	}
-
-	ctx = ctxsetters.WithStatusCode(ctx, http.StatusOK)
-	resp.Header().Set("Content-Type", "application/protobuf")
-	resp.Header().Set("Content-Length", strconv.Itoa(len(respBytes)))
-	resp.WriteHeader(http.StatusOK)
-	if n, err := resp.Write(respBytes); err != nil {
-		msg := fmt.Sprintf("failed to write response, %d of %d bytes written: %s", n, len(respBytes), err.Error())
-		twerr := twirp.NewError(twirp.Unknown, msg)
-		ctx = callError(ctx, s.hooks, twerr)
-	}
-	callResponseSent(ctx, s.hooks)
-}
-
 func (s *roomServiceServer) ServiceDescriptor() ([]byte, int) {
 	return twirpFileDescriptor2, 0
 }
@@ -2481,61 +2481,61 @@ func (s *roomServiceServer) PathPrefix() string {
 }
 
 var twirpFileDescriptor2 = []byte{
-	// 886 bytes of a gzipped FileDescriptorProto
+	// 890 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x56, 0xdb, 0x8e, 0xe3, 0x44,
-	0x10, 0xc5, 0x33, 0x49, 0x36, 0xa9, 0xcc, 0x2d, 0xbd, 0x83, 0xc6, 0xe3, 0x61, 0x56, 0xc1, 0x83,
-	0x44, 0x10, 0x90, 0x45, 0xe1, 0x01, 0x69, 0x85, 0x40, 0x7b, 0x03, 0x46, 0x33, 0x2b, 0x45, 0x9d,
-	0x45, 0x5c, 0x5e, 0x82, 0x13, 0x17, 0xbb, 0xad, 0x89, 0xdd, 0xc6, 0xdd, 0x0e, 0x3b, 0x7f, 0xc0,
+	0x10, 0xc5, 0x33, 0x49, 0x36, 0xa9, 0xcc, 0x2d, 0xb5, 0x83, 0xc6, 0xe3, 0x61, 0x56, 0xc1, 0x83,
+	0x44, 0x10, 0x90, 0x45, 0xe1, 0x01, 0x69, 0x85, 0x40, 0x7b, 0x03, 0xa2, 0x99, 0x95, 0xa2, 0xce,
+	0x22, 0x2e, 0x2f, 0xc1, 0x89, 0x9b, 0xdd, 0xd6, 0xc4, 0x6e, 0xe3, 0x6e, 0x0f, 0x3b, 0x7f, 0xc0,
 	0x67, 0xf0, 0xcc, 0x0f, 0x20, 0xf1, 0x1d, 0xbc, 0xf0, 0x0b, 0x7c, 0x05, 0xea, 0x4b, 0x6c, 0x27,
-	0x71, 0xc2, 0x6a, 0xdf, 0x52, 0xd7, 0xae, 0x53, 0xa7, 0xaa, 0x1c, 0x20, 0x33, 0x36, 0xc7, 0x1b,
-	0x26, 0xc7, 0x29, 0xe7, 0x51, 0x3f, 0x49, 0xb9, 0xe4, 0xe4, 0x8e, 0xd5, 0x79, 0xc7, 0x0b, 0x63,
-	0xc4, 0x43, 0x9c, 0x09, 0x63, 0x2e, 0xb4, 0xf8, 0x22, 0x45, 0x61, 0xb5, 0xfe, 0x3f, 0x0e, 0x74,
-	0x1e, 0xa7, 0x18, 0x48, 0xa4, 0x9c, 0x47, 0x14, 0x7f, 0xc9, 0x50, 0x48, 0x42, 0xa0, 0x16, 0x07,
-	0x11, 0xba, 0x4e, 0xd7, 0xe9, 0xb5, 0xa8, 0xfe, 0x4d, 0x2e, 0x60, 0x1f, 0xa3, 0x44, 0xde, 0x8e,
-	0x25, 0x8b, 0x90, 0x67, 0xd2, 0xdd, 0xe9, 0x3a, 0xbd, 0x7d, 0xba, 0xa7, 0x95, 0xcf, 0x8d, 0x8e,
-	0x7c, 0x00, 0x47, 0x51, 0xf0, 0x6a, 0x9c, 0x04, 0xa9, 0x64, 0x53, 0x96, 0x04, 0xb1, 0x14, 0xee,
-	0xae, 0xf6, 0x3b, 0x8c, 0x82, 0x57, 0xc3, 0x92, 0x9a, 0x9c, 0xc0, 0x9d, 0x98, 0x87, 0x38, 0x66,
-	0xa1, 0x5b, 0xd3, 0xcf, 0x34, 0x94, 0x78, 0x19, 0x12, 0x0f, 0x9a, 0x11, 0xca, 0x20, 0x0c, 0x64,
-	0xe0, 0xd6, 0xb5, 0x25, 0x97, 0xc9, 0x87, 0xd0, 0x30, 0xe5, 0xbb, 0x8d, 0xae, 0xd3, 0x6b, 0x0f,
-	0xee, 0xf6, 0x2d, 0xaa, 0xbe, 0x2a, 0xff, 0xa9, 0x36, 0x51, 0xeb, 0xe2, 0xff, 0x0a, 0x50, 0x68,
-	0xc9, 0x67, 0x50, 0x53, 0xcd, 0xd2, 0x98, 0xda, 0x83, 0x8b, 0xa5, 0xc0, 0xc7, 0x3c, 0x4a, 0xb8,
-	0x60, 0x12, 0x6d, 0x06, 0xd3, 0x06, 0xaa, 0x03, 0xc8, 0x27, 0xd0, 0x90, 0x69, 0x30, 0xbd, 0x11,
-	0x1a, 0x71, 0x7b, 0xe0, 0xe6, 0xa1, 0x0f, 0x33, 0xc9, 0x9f, 0x2b, 0xd3, 0xe2, 0x61, 0xe3, 0xe7,
-	0xbf, 0x0f, 0x9d, 0x27, 0x38, 0xc3, 0xb5, 0x9e, 0xe6, 0xef, 0xb7, 0x4c, 0x6a, 0xff, 0x18, 0x48,
-	0xd9, 0x51, 0x24, 0x3c, 0x16, 0xe8, 0x5f, 0xc2, 0x89, 0x92, 0x4b, 0xdd, 0xba, 0x0c, 0x31, 0x96,
-	0x4c, 0xde, 0x56, 0x25, 0x51, 0xfd, 0x62, 0xd6, 0xae, 0x2b, 0x6c, 0xd1, 0x5c, 0xf6, 0xcf, 0xe0,
-	0x94, 0x62, 0xc4, 0xe7, 0x58, 0x4a, 0x96, 0xbf, 0xf3, 0x31, 0x9c, 0x5c, 0x33, 0x21, 0xcb, 0xac,
-	0x6c, 0x2b, 0xf6, 0x7b, 0x70, 0xd7, 0xdd, 0x4d, 0x2a, 0xf2, 0x39, 0xec, 0x2d, 0x71, 0xee, 0x74,
-	0x77, 0x97, 0x3a, 0x55, 0xc6, 0x12, 0xff, 0xcc, 0xe9, 0x92, 0xb7, 0x7f, 0x0e, 0x67, 0xdf, 0x26,
-	0x61, 0x20, 0x71, 0x94, 0x4d, 0xc4, 0x34, 0x65, 0x89, 0x64, 0x3c, 0xce, 0x93, 0xfb, 0x04, 0x8e,
-	0x46, 0x18, 0x87, 0x4f, 0x02, 0x19, 0xe4, 0xba, 0x5b, 0x38, 0x7e, 0x96, 0x99, 0xbe, 0x69, 0x06,
-	0xb6, 0x14, 0xbe, 0xad, 0x41, 0xe4, 0x0c, 0x5a, 0x9a, 0xb4, 0xb1, 0x60, 0xa1, 0x9e, 0xd4, 0x16,
-	0x6d, 0x6a, 0xc5, 0x88, 0x85, 0xe4, 0x18, 0xea, 0x51, 0x26, 0xd1, 0x0c, 0x68, 0x93, 0x1a, 0xc1,
-	0x7f, 0x08, 0x6f, 0xaf, 0x3c, 0x6d, 0x9b, 0xd0, 0x83, 0xba, 0x0e, 0xb5, 0x23, 0x46, 0x72, 0xf4,
-	0xda, 0x4d, 0xe3, 0x36, 0x0e, 0xfe, 0x5f, 0x0e, 0xb8, 0x06, 0xf1, 0x12, 0x2f, 0x6f, 0x06, 0xa1,
-	0xbc, 0x2f, 0xbb, 0x2b, 0xfb, 0xf2, 0x05, 0x40, 0x82, 0x69, 0xc4, 0x84, 0x60, 0x3c, 0xd6, 0x30,
-	0xda, 0x83, 0x7b, 0x55, 0xac, 0x0c, 0x73, 0x2f, 0x5a, 0x8a, 0xc8, 0x0f, 0x41, 0xbd, 0x38, 0x04,
-	0xfe, 0xdf, 0x0e, 0x78, 0x95, 0x74, 0xbd, 0x59, 0xf9, 0xe7, 0x00, 0x39, 0x03, 0xea, 0x58, 0xec,
-	0xf6, 0x5a, 0xb4, 0xb5, 0xa0, 0x40, 0x90, 0x77, 0xa0, 0x25, 0xcc, 0x33, 0x13, 0xb4, 0x3c, 0x14,
-	0x0a, 0x72, 0x09, 0xa4, 0x34, 0x49, 0x63, 0xbb, 0xa7, 0x75, 0x3d, 0x7d, 0x5e, 0x15, 0x4e, 0x4d,
-	0x85, 0xa0, 0x9d, 0x64, 0x55, 0xe5, 0xff, 0xe9, 0xc0, 0x61, 0x31, 0x66, 0x9b, 0xb1, 0x10, 0xa8,
-	0xe9, 0x56, 0x2b, 0x1c, 0x7b, 0x54, 0xff, 0x26, 0x1f, 0x41, 0xed, 0x86, 0xc5, 0x66, 0x80, 0x0e,
-	0x4a, 0x63, 0xaf, 0x72, 0x0d, 0x83, 0xe9, 0x0d, 0xca, 0xfe, 0x15, 0x8b, 0x43, 0xaa, 0xbd, 0xd4,
-	0x91, 0x0c, 0x51, 0x48, 0x16, 0x07, 0xaa, 0x71, 0x06, 0x77, 0x4d, 0xe3, 0x3e, 0x2c, 0xe9, 0x35,
-	0xfa, 0x53, 0xa8, 0x4b, 0x9e, 0xb0, 0xa9, 0x21, 0xe0, 0x9b, 0xb7, 0xa8, 0x11, 0x7f, 0x73, 0x9c,
-	0x47, 0x4d, 0x68, 0x8c, 0xb5, 0xe0, 0x5f, 0xc1, 0xa9, 0xe1, 0x43, 0x8d, 0xe4, 0x33, 0x4b, 0xfd,
-	0xff, 0xd0, 0x91, 0x4f, 0xcc, 0xce, 0xf2, 0xc4, 0x0c, 0x7e, 0xaf, 0x43, 0x5b, 0xe5, 0x19, 0x61,
-	0x3a, 0x67, 0x53, 0x24, 0x4f, 0x01, 0x8a, 0x13, 0x45, 0x8a, 0x9e, 0xae, 0x1d, 0x38, 0xef, 0xac,
-	0xd2, 0x66, 0x77, 0xe3, 0x3b, 0x38, 0x5a, 0x3d, 0x1e, 0xa4, 0x9b, 0x07, 0x6c, 0x38, 0x43, 0xde,
-	0xbb, 0x5b, 0x3c, 0x6c, 0xe2, 0x6b, 0x38, 0xf8, 0x1a, 0xcb, 0xa6, 0x52, 0xda, 0x0d, 0x57, 0xd4,
-	0xdb, 0x78, 0x97, 0xc8, 0x10, 0x3a, 0x6b, 0x7b, 0x49, 0x8a, 0x2a, 0x36, 0xed, 0xec, 0x96, 0x8c,
-	0x3f, 0xc1, 0xdd, 0x8a, 0x65, 0x21, 0x17, 0x2b, 0x39, 0xab, 0x56, 0xc9, 0x7b, 0x6f, 0xbb, 0x93,
-	0xed, 0xc0, 0x97, 0xd0, 0x5c, 0xcc, 0x2d, 0x29, 0xea, 0x58, 0x19, 0x65, 0xef, 0xb4, 0xc2, 0x62,
-	0x13, 0xfc, 0x00, 0x9d, 0xb5, 0x8f, 0xc4, 0x6b, 0x74, 0xd1, 0x2f, 0x3c, 0x36, 0x7d, 0x62, 0xc8,
-	0x08, 0x88, 0xba, 0x95, 0xc3, 0x6c, 0x32, 0x63, 0xe2, 0x25, 0x86, 0x7a, 0xd7, 0xc8, 0x79, 0x1e,
-	0x59, 0x75, 0xc3, 0xbd, 0x7b, 0x9b, 0xcc, 0x26, 0xe9, 0xa3, 0xaf, 0x7e, 0xbc, 0x78, 0xc1, 0xe4,
-	0xcb, 0x6c, 0xd2, 0x9f, 0xf2, 0xe8, 0xbe, 0xf5, 0xbd, 0xaf, 0xff, 0xcf, 0x4c, 0xf9, 0x6c, 0xa1,
-	0xf8, 0x63, 0x67, 0xff, 0x9a, 0xcd, 0xf1, 0x4a, 0x71, 0xa2, 0x4c, 0xff, 0xee, 0x1c, 0x58, 0xf9,
-	0xc1, 0x03, 0xad, 0x98, 0x34, 0x74, 0xc8, 0xa7, 0xff, 0x05, 0x00, 0x00, 0xff, 0xff, 0xa0, 0xe2,
-	0x53, 0x43, 0x4d, 0x09, 0x00, 0x00,
+	0x71, 0x82, 0x76, 0xdf, 0xdc, 0x55, 0xd5, 0x55, 0x75, 0xea, 0x54, 0x1f, 0x19, 0x70, 0xce, 0x6e,
+	0xe8, 0x35, 0x93, 0x93, 0x94, 0xf3, 0xa8, 0x9f, 0xa4, 0x5c, 0x72, 0xbc, 0x63, 0x6d, 0xde, 0xf1,
+	0xc2, 0x19, 0xf1, 0x90, 0xce, 0x85, 0x71, 0x17, 0x56, 0xfa, 0x22, 0xa5, 0xc2, 0x5a, 0xfd, 0x7f,
+	0x1c, 0xe8, 0x3c, 0x4e, 0x69, 0x20, 0x29, 0xe1, 0x3c, 0x22, 0xf4, 0x97, 0x8c, 0x0a, 0x89, 0x08,
+	0xb5, 0x38, 0x88, 0xa8, 0xeb, 0x74, 0x9d, 0x5e, 0x8b, 0xe8, 0x6f, 0xbc, 0x80, 0x7d, 0x1a, 0x25,
+	0xf2, 0x76, 0x22, 0x59, 0x44, 0x79, 0x26, 0xdd, 0x9d, 0xae, 0xd3, 0xdb, 0x27, 0x7b, 0xda, 0xf8,
+	0xdc, 0xd8, 0xf0, 0x03, 0x38, 0x8a, 0x82, 0x57, 0x93, 0x24, 0x48, 0x25, 0x9b, 0xb1, 0x24, 0x88,
+	0xa5, 0x70, 0x77, 0x75, 0xdc, 0x61, 0x14, 0xbc, 0x1a, 0x95, 0xcc, 0x78, 0x02, 0x77, 0x62, 0x1e,
+	0xd2, 0x09, 0x0b, 0xdd, 0x9a, 0x2e, 0xd3, 0x50, 0xc7, 0x61, 0x88, 0x1e, 0x34, 0x23, 0x2a, 0x83,
+	0x30, 0x90, 0x81, 0x5b, 0xd7, 0x9e, 0xfc, 0x8c, 0x1f, 0x42, 0xc3, 0xb4, 0xef, 0x36, 0xba, 0x4e,
+	0xaf, 0x3d, 0xb8, 0xdb, 0xb7, 0xa8, 0xfa, 0xaa, 0xfd, 0xa7, 0xda, 0x45, 0x6c, 0x88, 0xff, 0x2b,
+	0x40, 0x61, 0xc5, 0xcf, 0xa0, 0xa6, 0x86, 0xa5, 0x31, 0xb5, 0x07, 0x17, 0x4b, 0x17, 0x1f, 0xf3,
+	0x28, 0xe1, 0x82, 0x49, 0x6a, 0x33, 0x98, 0x31, 0x10, 0x7d, 0x01, 0x3f, 0x81, 0x86, 0x4c, 0x83,
+	0xd9, 0xb5, 0xd0, 0x88, 0xdb, 0x03, 0x37, 0xbf, 0xfa, 0x30, 0x93, 0xfc, 0xb9, 0x72, 0x2d, 0x0a,
+	0x9b, 0x38, 0xff, 0x7d, 0xe8, 0x3c, 0xa1, 0x73, 0xba, 0x36, 0xd3, 0xbc, 0x7e, 0xcb, 0xa4, 0xf6,
+	0x8f, 0x01, 0xcb, 0x81, 0x22, 0xe1, 0xb1, 0xa0, 0xfe, 0x10, 0x4e, 0xd4, 0xb9, 0x34, 0xad, 0x61,
+	0x48, 0x63, 0xc9, 0xe4, 0x6d, 0x55, 0x12, 0x35, 0x2f, 0x66, 0xfd, 0xba, 0xc3, 0x16, 0xc9, 0xcf,
+	0xfe, 0x19, 0x9c, 0x12, 0x1a, 0xf1, 0x1b, 0x5a, 0x4a, 0x96, 0xd7, 0xb9, 0x85, 0xe3, 0x67, 0x99,
+	0xa9, 0xad, 0x51, 0x6c, 0xe9, 0x74, 0x5b, 0x11, 0x3c, 0x83, 0x96, 0x06, 0x3e, 0x11, 0x2c, 0xd4,
+	0x6c, 0xb7, 0x48, 0x53, 0x1b, 0xc6, 0x2c, 0xc4, 0x63, 0xa8, 0x47, 0x99, 0xa4, 0x86, 0xe4, 0x26,
+	0x31, 0x07, 0xff, 0x21, 0xbc, 0xbd, 0x52, 0xda, 0xf4, 0x84, 0x3d, 0xa8, 0xeb, 0xab, 0x96, 0x26,
+	0xcc, 0x67, 0xad, 0xc3, 0x86, 0xf1, 0xcf, 0x9c, 0x98, 0x00, 0xff, 0x2f, 0x07, 0xdc, 0x6f, 0x93,
+	0x30, 0x90, 0xcb, 0xd8, 0xde, 0x0c, 0x42, 0x79, 0xe7, 0x76, 0x57, 0x76, 0xee, 0x0b, 0x80, 0x84,
+	0xa6, 0x11, 0x13, 0x82, 0xf1, 0x58, 0xc3, 0x68, 0x0f, 0xee, 0xe5, 0x7d, 0x95, 0x8a, 0x8f, 0xf2,
+	0x28, 0x52, 0xba, 0x91, 0x3f, 0xa6, 0x7a, 0xf1, 0x98, 0xfc, 0xbf, 0x1d, 0xf0, 0x4c, 0xf3, 0xe3,
+	0x6c, 0x2a, 0x66, 0x29, 0x4b, 0x24, 0xe3, 0xb1, 0x78, 0xd3, 0xf6, 0xcf, 0x01, 0x72, 0x06, 0xd4,
+	0x83, 0xdb, 0xed, 0xb5, 0x48, 0x6b, 0x41, 0x81, 0xc0, 0x77, 0xa0, 0x25, 0x4c, 0x99, 0x29, 0xb5,
+	0x3c, 0x14, 0x06, 0x1c, 0x02, 0x96, 0xde, 0xeb, 0xc4, 0xee, 0x7a, 0xbd, 0xbb, 0xdb, 0x6b, 0x0f,
+	0xbc, 0x2a, 0x9c, 0x9a, 0x0a, 0x41, 0x3a, 0xc9, 0xaa, 0xc9, 0xff, 0xd3, 0x81, 0xc3, 0x31, 0x8d,
+	0xc3, 0x27, 0x81, 0x0c, 0xb6, 0x61, 0x41, 0xa8, 0xe9, 0x51, 0x2b, 0x1c, 0x7b, 0x44, 0x7f, 0xe3,
+	0x47, 0x50, 0xbb, 0x66, 0xb1, 0x59, 0xa0, 0x83, 0xd2, 0x23, 0x53, 0xb9, 0x46, 0xc1, 0xec, 0x9a,
+	0xca, 0xfe, 0x25, 0x8b, 0x43, 0xa2, 0xa3, 0x94, 0xd0, 0x84, 0x54, 0x48, 0x16, 0x07, 0x6a, 0x70,
+	0x06, 0x77, 0x4d, 0xe3, 0x3e, 0x2c, 0xd9, 0x35, 0xfa, 0x53, 0xa8, 0x4b, 0x9e, 0xb0, 0x99, 0x21,
+	0xe0, 0x9b, 0xb7, 0x88, 0x39, 0xfe, 0xe6, 0x38, 0x8f, 0x9a, 0xd0, 0x98, 0xe8, 0x83, 0x7f, 0x09,
+	0xa7, 0x86, 0x0f, 0xb5, 0x92, 0xcf, 0x2c, 0xf5, 0xff, 0x43, 0x47, 0xbe, 0x31, 0x3b, 0xcb, 0x1b,
+	0xe3, 0x7f, 0x0c, 0x27, 0x57, 0x4c, 0xc8, 0xb2, 0xdc, 0x6d, 0x53, 0x81, 0xef, 0xc1, 0x5d, 0x0f,
+	0xb7, 0xef, 0xe1, 0x73, 0xd8, 0x5b, 0x12, 0x53, 0x47, 0xd3, 0xe2, 0x56, 0xd1, 0xa2, 0x1f, 0xc7,
+	0x52, 0xb4, 0x7f, 0x0e, 0x67, 0x95, 0x5b, 0x66, 0x05, 0x00, 0xe1, 0xa8, 0x60, 0xcb, 0xd8, 0x06,
+	0xbf, 0xd7, 0xa1, 0xad, 0x66, 0x30, 0xa6, 0xe9, 0x0d, 0x9b, 0x51, 0x7c, 0x0a, 0x50, 0x48, 0x14,
+	0x16, 0xfb, 0xb0, 0x26, 0x70, 0xde, 0x59, 0xa5, 0xcf, 0xe2, 0xf8, 0x01, 0x3a, 0x6b, 0x42, 0x84,
+	0xdd, 0x25, 0x11, 0xae, 0xd0, 0x3b, 0xcf, 0x2f, 0x22, 0x36, 0xc9, 0x18, 0x8e, 0x01, 0x95, 0x96,
+	0x8c, 0xb2, 0xe9, 0x9c, 0x89, 0x97, 0x34, 0xd4, 0xbb, 0x88, 0xe7, 0xf9, 0xcd, 0x2a, 0x8d, 0xf3,
+	0xee, 0x6d, 0x72, 0xdb, 0xa4, 0xdf, 0xc1, 0xd1, 0x2a, 0x27, 0xa5, 0x76, 0x37, 0xb0, 0xeb, 0xbd,
+	0xbb, 0x25, 0xc2, 0x26, 0xbe, 0x82, 0x83, 0xaf, 0xa9, 0x7c, 0xbd, 0x29, 0x6c, 0xa4, 0x1b, 0x47,
+	0xd0, 0x59, 0xd3, 0x40, 0x2c, 0xba, 0xd8, 0xa4, 0x8f, 0x5b, 0x32, 0xfe, 0x04, 0x77, 0x2b, 0x56,
+	0x06, 0x2f, 0x56, 0x72, 0x56, 0xc9, 0x96, 0xf7, 0xde, 0xf6, 0x20, 0x3b, 0x81, 0x2f, 0xa1, 0xb9,
+	0xd8, 0x3a, 0x2c, 0xfa, 0x58, 0x91, 0x0d, 0xef, 0xb4, 0xc2, 0x63, 0x12, 0x3c, 0xfa, 0xea, 0xc7,
+	0x8b, 0x17, 0x4c, 0xbe, 0xcc, 0xa6, 0xfd, 0x19, 0x8f, 0xee, 0xdb, 0xb0, 0xfb, 0xfa, 0x7f, 0x66,
+	0xc6, 0xe7, 0x0b, 0xc3, 0x1f, 0x3b, 0xfb, 0x57, 0xec, 0x86, 0x5e, 0x2a, 0x8c, 0xca, 0xf5, 0xef,
+	0xce, 0x81, 0x3d, 0x3f, 0x78, 0xa0, 0x0d, 0xd3, 0x86, 0xbe, 0xf2, 0xe9, 0x7f, 0x01, 0x00, 0x00,
+	0xff, 0xff, 0x28, 0x30, 0x0c, 0xcb, 0x4d, 0x09, 0x00, 0x00,
 }
