@@ -35,6 +35,12 @@ service RoomService {
 
   // Send data over data channel to participants in a room, Requires `roomAdmin`
   rpc SendData(SendDataRequest) returns (SendDataResponse);
+
+  // List rooms that are active on the server. Requires `roomList` permission.
+  rpc ListRooms(ListRoomsRequest) returns (ListRoomsResponse);
+
+  // Update room metadata, will cause updates to be broadcasted to everyone in the room, Requires `roomAdmin`
+  rpc UpdateRoomMetadata (UpdateRoomMetadataRequest) returns (Room);
 }
 
 message CreateRoomRequest {
@@ -140,4 +146,13 @@ message UpdateSubscriptionsResponse {
 
 message SendDataResponse {
   //
+}
+
+message ListRoomsRequest {
+  // when set, will only return rooms with name match
+  repeated string names = 1;
+}
+
+message ListRoomsResponse {
+  repeated Room rooms = 1;
 }
