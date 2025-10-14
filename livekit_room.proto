@@ -20,6 +20,27 @@ service RoomService {
 
   // Mute/unmute a participant's track, Requires `roomAdmin`
   rpc MutePublishedTrack(MuteRoomTrackRequest) returns (MuteRoomTrackResponse);
+
+  // Lists participants in a room, Requires `roomAdmin`
+  rpc ListParticipants(ListParticipantsRequest) returns (ListParticipantsResponse);
+
+  // Get information on a specific participant, Requires `roomAdmin`
+  rpc GetParticipant(RoomParticipantIdentity) returns (ParticipantInfo);
+
+  // Update participant metadata, will cause updates to be broadcasted to everyone in the room. Requires `roomAdmin`
+  rpc UpdateParticipant(UpdateParticipantRequest) returns (ParticipantInfo);
+
+  // Subscribes or unsubscribe a participant from tracks. Requires `roomAdmin`
+  rpc UpdateSubscriptions(UpdateSubscriptionsRequest) returns (UpdateSubscriptionsResponse);
+
+  // Send data over data channel to participants in a room, Requires `roomAdmin`
+  rpc SendData(SendDataRequest) returns (SendDataResponse);
+
+  // List rooms that are active on the server. Requires `roomList` permission.
+  rpc ListRooms(ListRoomsRequest) returns (ListRoomsResponse);
+
+  // Update room metadata, will cause updates to be broadcasted to everyone in the room, Requires `roomAdmin`
+  rpc UpdateRoomMetadata (UpdateRoomMetadataRequest) returns (Room);
 }
 
 message CreateRoomRequest {
@@ -108,4 +129,30 @@ message UpdateRoomMetadataRequest {
   string room = 1;
   // metadata to update. skipping updates if left empty
   string metadata = 2;
+}
+
+message ListParticipantsRequest {
+  // name of the room
+  string room = 1;
+}
+
+message ListParticipantsResponse {
+  repeated ParticipantInfo participants = 1;
+}
+
+message UpdateSubscriptionsResponse {
+  // empty for now
+}
+
+message SendDataResponse {
+  //
+}
+
+message ListRoomsRequest {
+  // when set, will only return rooms with name match
+  repeated string names = 1;
+}
+
+message ListRoomsResponse {
+  repeated Room rooms = 1;
 }
