@@ -6,6 +6,10 @@ import (
 	"github.com/livekit/protocol/livekit"
 )
 
+// maxWebHookURLs bounds the POSTs a node makes per event. Cloud tokens carry the backend's ingest
+// URL plus up to 5 customer URLs.
+const maxWebHookURLs = 6
+
 type VideoGrant struct {
 	// actions on rooms
 	RoomCreate bool `json:"roomCreate,omitempty"`
@@ -45,6 +49,8 @@ type ClaimGrants struct {
 	Sha256     string `json:"sha256,omitempty"`
 	Metadata   string `json:"metadata,omitempty"`
 	WebHookURL string `json:"webHookURL,omitempty"`
+	// WebHookURLs are additional webhook receivers. WebHookURL stays for old tokens and nodes.
+	WebHookURLs []string `json:"webHookURLs,omitempty"`
 }
 
 func (c *ClaimGrants) Clone() *ClaimGrants {
@@ -54,8 +60,35 @@ func (c *ClaimGrants) Clone() *ClaimGrants {
 
 	clone := *c
 	clone.Video = c.Video.Clone()
+	if c.WebHookURLs != nil {
+		clone.WebHookURLs = make([]string, len(c.WebHookURLs))
+		copy(clone.WebHookURLs, c.WebHookURLs)
+	}
 
 	return &clone
+}
+
+// AllWebHookURLs returns every webhook receiver of the token: WebHookURL first, then WebHookURLs,
+// without empties or duplicates, at most maxWebHookURLs. It is nil when there are none.
+func (c *ClaimGrants) AllWebHookURLs() []string {
+	if c == nil {
+		return nil
+	}
+
+	var urls []string
+	seen := make(map[string]struct{}, len(c.WebHookURLs)+1)
+	add := func(url string) {
+		if _, dup := seen[url]; url == "" || dup || len(urls) == maxWebHookURLs {
+			return
+		}
+		seen[url] = struct{}{}
+		urls = append(urls, url)
+	}
+	add(c.WebHookURL)
+	for _, url := range c.WebHookURLs {
+		add(url)
+	}
+	return urls
 }
 
 func (v *VideoGrant) SetCanPublish(val bool) {
