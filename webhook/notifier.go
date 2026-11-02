@@ -70,10 +70,10 @@ func (n *notifier) Notify(_ context.Context, payload interface{}, url string) er
 	r.Header.Set(authHeader, token)
 	// use a custom mime type to ensure signature is checked prior to parsing
 	r.Header.Set("content-type", "application/webhook+json")
-	_, err = n.client.Do(r)
+	resp, err := n.client.Do(r)
 	if err != nil {
 		return err
 	}
 
-	return nil
+	return resp.Body.Close()
 }

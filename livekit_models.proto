@@ -85,6 +85,8 @@ message ParticipantInfo {
   // and can publish to the server
   bool is_publisher = 13;
   bool relayed = 14;
+  // last measured media round trip time in ms, unset until a sample exists
+  uint32 rtt_ms = 15;
 }
 
 enum TrackType {

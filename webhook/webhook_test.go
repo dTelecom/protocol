@@ -5,9 +5,12 @@ import (
 	"encoding/json"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"sync"
 	"testing"
+	"time"
 
+	"github.com/gagliardetto/solana-go"
 	"github.com/stretchr/testify/require"
 
 	"github.com/livekit/protocol/auth"
@@ -15,22 +18,19 @@ import (
 	"github.com/livekit/protocol/webhook"
 )
 
-const (
-	apiKey    = "mykey"
-	apiSecret = "mysecret"
-)
+const webhookURL = "http://localhost:8765"
 
 func TestWebHook(t *testing.T) {
 	s := newServer(":8765")
 	require.NoError(t, s.Start())
 	defer s.Stop()
 
-	authProvider := auth.NewSimpleKeyProvider(
-		apiKey, apiSecret,
-	)
-	notifier := webhook.NewNotifier(apiKey, apiSecret, []string{
-		"http://localhost:8765",
-	})
+	// keys are Solana keypairs: the notifier signs with the private key, the receiver verifies with the public one
+	key, err := solana.NewRandomPrivateKey()
+	require.NoError(t, err)
+	apiKey := key.PublicKey().String()
+	authProvider := auth.NewSimpleKeyProvider(apiKey, apiKey)
+	notifier := webhook.NewNotifier(apiKey, key.String())
 
 	t.Run("test json payload", func(t *testing.T) {
 		payload := map[string]interface{}{
@@ -54,7 +54,7 @@ func TestWebHook(t *testing.T) {
 			require.EqualValues(t, decoded, payload)
 		}
 
-		require.NoError(t, notifier.Notify(context.Background(), payload))
+		require.NoError(t, notifier.Notify(context.Background(), payload, webhookURL))
 		wg.Wait()
 	})
 
@@ -78,10 +78,36 @@ func TestWebHook(t *testing.T) {
 
 			require.EqualValues(t, event, decodedEvent)
 		}
-		require.NoError(t, notifier.Notify(context.Background(), event))
+		require.NoError(t, notifier.Notify(context.Background(), event, webhookURL))
 		wg.Wait()
 	})
 
+}
+
+// TestNotifyClosesResponseBody: an unclosed body holds the connection until the client timeout.
+func TestNotifyClosesResponseBody(t *testing.T) {
+	closed := make(chan struct{}, 1)
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte("ok"))
+	}))
+	server.Config.ConnState = func(_ net.Conn, state http.ConnState) {
+		if state == http.StateClosed {
+			closed <- struct{}{}
+		}
+	}
+	server.Start()
+	defer server.Close()
+
+	key, err := solana.NewRandomPrivateKey()
+	require.NoError(t, err)
+	notifier := webhook.NewNotifier(key.PublicKey().String(), key.String())
+	require.NoError(t, notifier.Notify(context.Background(), map[string]string{"a": "b"}, server.URL))
+
+	select {
+	case <-closed:
+	case <-time.After(2 * time.Second):
+		t.Fatal("connection still held after Notify returned")
+	}
 }
 
 type testServer struct {
